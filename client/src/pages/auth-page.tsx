@@ -72,13 +72,23 @@ export default function AuthPage() {
   });
 
   async function onLoginSubmit(data: LoginFormValues) {
-    await loginMutation.mutateAsync(data);
+    try {
+      await loginMutation.mutateAsync(data);
+      navigate("/");
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   }
 
   async function onRegisterSubmit(data: RegisterFormValues) {
-    // Remove passwordConfirm before submitting
-    const { passwordConfirm, ...registrationData } = data;
-    await registerMutation.mutateAsync(registrationData);
+    try {
+      // Remove passwordConfirm before submitting
+      const { passwordConfirm, ...registrationData } = data;
+      await registerMutation.mutateAsync(registrationData);
+      navigate("/");
+    } catch (error) {
+      console.error("Registration error:", error);
+    }
   }
 
   return (
