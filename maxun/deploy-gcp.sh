@@ -85,20 +85,21 @@ read -p "Do you want to set up a scheduled job for the Oak Bay council scraper? 
 if [[ "$CREATE_JOB" =~ ^[Yy]$ ]]; then
   JOB_NAME="oakbay-council-scraper"
   SCHEDULE="0 2 * * *"  # Run at 2:00 AM every day
-  
+
   # Check if the job already exists
-  if gcloud scheduler jobs describe $JOB_NAME &> /dev/null; then
-    gcloud scheduler jobs delete $JOB_NAME --quiet
+  if gcloud scheduler jobs describe $JOB_NAME --location=$REGION &> /dev/null; then
+    gcloud scheduler jobs delete $JOB_NAME --location=$REGION --quiet
   fi
-  
+
   echo "Creating scheduled job $JOB_NAME..."
   gcloud scheduler jobs create http $JOB_NAME \
+    --location=$REGION \
     --schedule="$SCHEDULE" \
     --uri="$SERVICE_URL/api/maxun/robots/oakbay-council-robot/run" \
     --http-method=POST \
     --message-body="{}" \
     --headers="Content-Type=application/json"
-  
+
   echo "Scheduled job created. It will run at $SCHEDULE."
 fi
 
