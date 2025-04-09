@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Mic, Menu, User, Settings, LogOut, CheckCircle, Calendar, AlertCircle, LogIn } from 'lucide-react';
+import { Search, Bell, Mic, Menu, User, Settings, LogOut, CheckCircle, Calendar, AlertCircle, LogIn, Database } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import obLogo from '@assets/OB-logo.png';
@@ -14,9 +14,11 @@ const getInitials = (name: string): string => {
     .substring(0, 2);
 };
 
-interface HeaderProps {}
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
 
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logoutMutation } = useAuth();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +28,13 @@ const Header: React.FC<HeaderProps> = () => {
   
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  
+  // Handle mobile menu toggle
+  const onMobileMenuToggle = () => {
+    if (onToggleSidebar) {
+      onToggleSidebar();
+    }
+  };
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -71,20 +80,21 @@ const Header: React.FC<HeaderProps> = () => {
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo and site name */}
-          <Link href="/" className="flex items-center space-x-3">
-            <img src={obLogo} alt="Oak Bay Logo" className="h-10" />
-            <div className="border-l border-gray-300 h-8 mx-1"></div>
-            <div>
+      <div className="container mx-auto px-2 md:px-4">
+        <div className="flex items-center h-16">
+          {/* Logo - Positioned further left and simplified on mobile */}
+          <Link href="/" className="flex items-center">
+            <img src={obLogo} alt="Oak Bay Logo" className="h-9 md:h-10 mr-2 md:mr-3" />
+            <div className="hidden sm:block border-l border-gray-300 h-8 mx-1"></div>
+            <div className="hidden sm:block">
               <div className="font-heading font-semibold text-[#0056a6] leading-tight">CouncilInsight</div>
               <div className="text-xs text-gray-500">Meeting Intelligence Platform</div>
             </div>
+            <div className="sm:hidden font-heading font-semibold text-[#0056a6] text-sm">CouncilInsight</div>
           </Link>
           
-          {/* Desktop Search bar */}
-          <div className="hidden md:flex flex-1 max-w-2xl mx-6">
+          {/* Desktop Search bar - with adjusted margins */}
+          <div className="hidden md:flex flex-1 max-w-2xl ml-8 mr-4">
             <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-gray-400" />
@@ -102,10 +112,10 @@ const Header: React.FC<HeaderProps> = () => {
             </div>
           </div>
           
-          {/* Right side utilities */}
-          <div className="flex items-center space-x-4">
+          {/* Right side utilities - with more space */}
+          <div className="flex items-center ml-auto space-x-1 sm:space-x-3">
             <button 
-              className="md:hidden focus:outline-none"
+              className="md:hidden p-2 focus:outline-none"
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
             >
               <Search className="h-5 w-5 text-gray-500" />
@@ -221,7 +231,7 @@ const Header: React.FC<HeaderProps> = () => {
                             className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             onClick={() => setUserMenuOpen(false)}
                           >
-                            <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                            <Database className="h-4 w-4 mr-3 text-gray-500" />
                             Data Management
                           </Link>
                         )}
@@ -252,7 +262,10 @@ const Header: React.FC<HeaderProps> = () => {
             </div>
             
             {/* Mobile Menu Button */}
-            <button className="md:hidden p-2 focus:outline-none" id="mobile-menu-button">
+            <button 
+              className="md:hidden p-2 focus:outline-none" 
+              onClick={onMobileMenuToggle}
+            >
               <Menu className="h-5 w-5 text-gray-500" />
             </button>
           </div>

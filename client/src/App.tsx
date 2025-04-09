@@ -44,7 +44,7 @@ function Router() {
         
         <Route>
           {/* All other routes have the standard layout with header and sidebar */}
-          <Header />
+          <Header onToggleSidebar={handleToggleSidebar} />
           <div className="flex min-h-[calc(100vh-64px)]">
             <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
             <main className="flex-1 overflow-auto">
