@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { router as maxunRouter } from "./maxun-client";
+import { router as multimodalRouter } from "./routes/multimodal";
 import { log } from "./vite";
 import { setupAuth, roleCheck } from "./auth";
 
@@ -9,8 +10,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
   
-  // Mount the Maxun API router
+  // Mount the API routers
   app.use('/api/maxun', maxunRouter);
+  app.use('/api/multimodal', multimodalRouter);
   // API Routes
   // Dashboard stats
   app.get('/api/dashboard/stats', async (req: Request, res: Response) => {

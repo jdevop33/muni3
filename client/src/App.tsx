@@ -15,6 +15,7 @@ import Decisions from "@/pages/decisions";
 import DataIngestion from "@/pages/data-ingestion";
 import Analytics from "@/pages/analytics";
 import Neighborhoods from "@/pages/neighborhoods";
+import MultimodalPage from "@/pages/multimodal";
 import HousingProject from "@/pages/projects/housing";
 import TransportationProject from "@/pages/projects/transportation";
 import ParksProject from "@/pages/projects/parks";
@@ -55,6 +56,7 @@ function Router() {
                 <ProtectedRoute path="/decisions" component={() => <Decisions />} />
                 <ProtectedRoute path="/analytics" component={() => <Analytics />} />
                 <ProtectedRoute path="/neighborhoods" component={() => <Neighborhoods />} />
+                <ProtectedRoute path="/multimodal" component={() => <MultimodalPage />} />
                 <ProtectedRoute path="/projects/housing" component={() => <HousingProject />} />
                 <ProtectedRoute path="/projects/transportation" component={() => <TransportationProject />} />
                 <ProtectedRoute path="/projects/parks" component={() => <ParksProject />} />

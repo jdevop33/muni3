@@ -2,7 +2,8 @@ import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { 
   BarChart3, Calendar, LightbulbIcon, CheckCircle, BarChart2, MapPin,
-  Home, Bike, Palmtree, Building, Database, Bell, Bookmark, Settings, ChevronRight
+  Home, Bike, Palmtree, Building, Database, Bell, Bookmark, Settings, ChevronRight,
+  FileImage, Image
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -35,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const toolItems = [
     { label: 'Data Ingestion', icon: Database, path: '/data-ingestion' },
+    { label: 'Multimodal Analysis', icon: FileImage, path: '/multimodal' },
     { label: 'My Alerts', icon: Bell, path: '/alerts' },
     { label: 'Saved Items', icon: Bookmark, path: '/saved' },
     { label: 'Settings', icon: Settings, path: '/settings' },
