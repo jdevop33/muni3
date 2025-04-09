@@ -1,0 +1,85 @@
+# CouncilInsight
+## Transforming Oak Bay's Council Meeting Experience
+
+---
+
+### What is CouncilInsight?
+
+CouncilInsight is an innovative platform that makes Oak Bay's council meetings more accessible, searchable, and connected to community projects. By transforming how meeting content is captured and shared, it creates a more transparent and participatory governance experience for everyone.
+
+---
+
+### Key Benefits for Our Community
+
+#### For Oak Bay Residents
+- **Find What Matters to You**: Easily search council discussions by topic, neighborhood, or project
+- **Stay Informed**: Receive alerts when council discusses issues you care about
+- **Understand Decisions**: See the full context behind council actions and votes
+- **Connect the Dots**: Link council discussions directly to Connect Oak Bay projects
+- **Participate More Effectively**: Come to meetings prepared with historical context
+
+#### For Municipal Staff
+- **Save Time**: Reduce meeting documentation time by 75%
+- **Answer Questions Accurately**: Find precise information in seconds, not hours
+- **Track Implementation**: Monitor progress on council directives
+- **Preserve Knowledge**: Maintain institutional memory despite staff changes
+
+#### For Council Members
+- **Make Better Decisions**: Access historical context for current issues
+- **Demonstrate Accountability**: Show how decisions connect to community priorities
+- **Improve Communication**: Share exact council discussions with constituents
+- **Track Performance**: Monitor implementation of council directions
+
+---
+
+### How It Works
+
+1. **Council meetings are automatically processed**
+   - Video is transcribed with speaker identification
+   - Documents are analyzed and indexed
+   - Decisions and action items are highlighted
+
+2. **Content is organized and made searchable**
+   - Topics are categorized by Oak Bay priorities
+   - Neighborhood references are tagged
+   - Project mentions are linked to Connect Oak Bay
+
+3. **Information is made accessible where you need it**
+   - Embedded in Connect Oak Bay project pages
+   - Available through a dedicated portal
+   - Searchable by topic, person, or location
+
+---
+
+### Real Examples from Oak Bay
+
+**Housing Action Program**
+- Track all council discussions about housing affordability
+- See how citizen input influenced policy development
+- Monitor implementation of housing initiatives
+
+**Henderson and Haultain-Estevan Cycling Projects**
+- Review council budget allocations for cycling infrastructure
+- Follow the decision-making process from proposal to implementation
+- Link cycling discussions to Active Transportation priorities
+
+**Carnarvon Park Master Plan**
+- See complete council deliberations on park improvements
+- Connect facility discussions to implementation timelines
+- Understand the full context of design decisions
+
+---
+
+### Coming to Oak Bay in 2025
+
+CouncilInsight will be integrated with Connect Oak Bay in early 2025, creating a more connected, transparent, and accessible governance experience for our community.
+
+We invite you to learn more and provide input on this exciting new tool.
+
+**Questions or feedback?**
+Visit: connect.oakbay.ca/councilinsight-feedback
+Email: communications@oakbay.ca
+
+---
+
+*CouncilInsight: Making Oak Bay's governance more transparent, accessible, and connected.*

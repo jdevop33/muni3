@@ -1,0 +1,320 @@
+# CouncilInsight for Oak Bay
+## User Guide
+
+---
+
+## Overview
+
+CouncilInsight transforms how Oak Bay's council meetings are captured, understood, and shared across the community. This guide demonstrates how different stakeholders can use the system and highlights the key benefits for each user group.
+
+---
+
+## For Citizens
+
+### Finding Council Discussions
+
+**Search by Topic**
+1. Navigate to the CouncilInsight dashboard through Connect Oak Bay
+2. Enter a keyword in the search bar (e.g., "cycling", "housing", "Carnarvon Park")
+3. Filter results by date range, meeting type, or speaker
+4. Review matching discussions with highlighted relevant sections
+
+**Browse by Project**
+1. Visit any project page on Connect Oak Bay (e.g., "Housing Action Program")
+2. Scroll to the "Council Discussions" widget
+3. View chronological list of all council mentions related to this project
+4. Click any item to see the full context and video timestamp
+
+**Explore by Neighborhood**
+1. Select the "Neighborhoods" tab in the CouncilInsight dashboard
+2. Choose your area (North, Central, or South Oak Bay)
+3. See all council discussions relevant to your neighborhood
+4. Filter by topic category or time period
+
+### Setting Up Alerts
+
+**Topic Notifications**
+1. Create a free account or log in with your Connect Oak Bay credentials
+2. Navigate to "My Alerts" in the user menu
+3. Select "Add Topic Alert" and enter keywords of interest
+4. Choose notification preferences (email, website, or mobile)
+5. Receive alerts when your topics are discussed in council
+
+**Geographic Alerts**
+1. From your user profile, select "My Neighborhoods"
+2. Select areas of Oak Bay you want to monitor
+3. Choose which types of council actions to be notified about
+4. Receive updates when council discusses your selected areas
+
+### Understanding Council Decisions
+
+**Decision Tracking**
+1. Visit the "Decisions" tab on the CouncilInsight dashboard
+2. Browse chronological list of all council decisions
+3. Filter by topic, project, or council member
+4. Click any decision to see:
+   - Full context of the discussion
+   - Voting record (if applicable)
+   - Video clip of the decision moment
+   - Related documents and background information
+
+**Topic Timeline**
+1. Search for any topic of interest
+2. Select the "Timeline View" option
+3. See visual progression of council discussions and decisions
+4. Identify key turning points and decision milestones
+
+---
+
+## For Municipal Staff
+
+### Meeting Documentation
+
+**Automated Transcription**
+1. Upload meeting video or connect live stream to CouncilInsight
+2. System automatically processes audio and generates transcription
+3. Speaker identification tags each council member and delegation
+4. Review and make any necessary corrections
+5. Publish to make searchable by staff and/or public
+
+**Minutes Generation**
+1. After meeting transcription is complete, select "Generate Minutes"
+2. Review automated summary of key points and decisions
+3. Edit as needed using the integrated editor
+4. Export to PDF or Word format for official records
+5. Publish directly to Connect Oak Bay
+
+**Action Item Tracking**
+1. System automatically identifies potential action items during meetings
+2. Staff review and confirm each action item
+3. Assign responsibility and due dates
+4. Track implementation status through the dashboard
+5. Generate progress reports for council and management
+
+### Knowledge Management
+
+**Information Retrieval**
+1. Use advanced search to find previous council directions
+2. Filter by department, project, or responsible party
+3. Access exact quotes, full context, and video evidence
+4. Generate reports for internal briefings
+
+**Institutional Memory**
+1. Create department-specific knowledge bases
+2. Tag council decisions relevant to specific operational areas
+3. Onboard new staff with historical context for current initiatives
+4. Preserve organizational knowledge despite staff turnover
+
+### Public Inquiry Response
+
+**Quick Answers**
+1. When citizens inquire about council discussions, use keyword search
+2. Find exact council statements on the topic
+3. Generate shareable links to specific meeting moments
+4. Provide accurate, verifiable information in seconds
+
+**Report Generation**
+1. Create custom reports on council activity by topic
+2. Generate statistics on discussion time by subject area
+3. Track public delegation subjects and trends
+4. Support evidence-based decision making with data
+
+---
+
+## For Council Members
+
+### Meeting Preparation
+
+**Previous Discussion Review**
+1. Before meetings, search for agenda items in CouncilInsight
+2. Review previous council discussions on the topic
+3. See how the issue has evolved over time
+4. Access staff reports and related documents in context
+
+**Constituent Concerns**
+1. Search for topics raised by constituents
+2. Review what council has previously discussed or decided
+3. Identify opportunities for follow-up or new motions
+4. Prepare more informed positions based on historical context
+
+### Performance Tracking
+
+**Priority Implementation**
+1. Track progress on council strategic priorities
+2. See which directives have been completed vs. outstanding
+3. Monitor implementation timelines and milestones
+4. Hold staff accountable for council direction
+
+**Commitment Tracking**
+1. Review previous statements and commitments made in council
+2. Track progress on campaign promises and initiatives
+3. Generate reports on personal priority areas
+4. Demonstrate accountability to constituents
+
+---
+
+## For Communications Team
+
+### Public Information
+
+**Project Updates**
+1. Embed relevant council discussions directly in project updates
+2. Link decisions to implementation actions
+3. Provide citizens with full context for municipal initiatives
+4. Create transparency through direct access to source material
+
+**Social Media Content**
+1. Generate short video clips of key council moments
+2. Create shareable graphics with council decisions and quotes
+3. Link directly to full discussion context from social posts
+4. Increase engagement through authentic, accurate content
+
+### Performance Reporting
+
+**Council Activity Metrics**
+1. Generate reports on council discussion time by topic
+2. Track decision implementation rates
+3. Measure public engagement with governance content
+4. Demonstrate transparency and accountability
+
+**Strategic Priority Tracking**
+1. Link council actions to strategic plan objectives
+2. Create visual dashboards showing progress on key initiatives
+3. Generate regular updates for public consumption
+4. Support data-driven communications about municipal achievements
+
+---
+
+## Integration with Connect Oak Bay
+
+### Project Page Integration
+
+**Embedded Widgets**
+- Council Discussions widget shows all relevant meeting content
+- Decision Timeline visualizes progression of project approvals
+- Meeting Calendar highlights upcoming discussions on the topic
+
+**Cross-Linking**
+- Council discussions automatically link to relevant projects
+- Project updates reference applicable council decisions
+- Seamless navigation between governance and implementation
+
+### User Account Integration
+
+**Single Sign-On**
+- Use existing Connect Oak Bay credentials
+- Maintain consistent profile and preferences
+- Unified notification system across platforms
+
+**Preference Sharing**
+- Topic interests sync between platforms
+- Location preferences apply to both systems
+- Personalized experience based on user behavior
+
+---
+
+## Technical Specifications
+
+### Data Security
+
+- All data hosted in Canadian data centers
+- BC FOIPPA compliant storage and processing
+- End-to-end encryption for sensitive content
+- Role-based access controls for staff information
+
+### Accessibility Features
+
+- Full WCAG 2.1 AA compliance
+- Screen reader optimization
+- Keyboard navigation support
+- Text size and contrast adjustments
+- Closed captioning for all video content
+
+### Mobile Experience
+
+- Responsive design for all device sizes
+- Native mobile app for iOS and Android
+- Offline access to downloaded meeting content
+- Push notifications for alerts and updates
+
+---
+
+## Support Resources
+
+### Training Options
+
+- In-person staff training sessions
+- Council member orientation
+- On-demand video tutorials
+- Monthly webinars on advanced features
+
+### Technical Support
+
+- Dedicated support portal for staff
+- 24/7 emergency assistance
+- Regular maintenance and updates
+- Quarterly feature enhancements
+
+### Feedback Process
+
+- Integrated feature request system
+- User feedback surveys
+- Quarterly stakeholder reviews
+- Annual system evaluation
+
+---
+
+## Getting Started
+
+### For Oak Bay Staff
+
+1. Attend the orientation session (dates TBD)
+2. Set up your staff account with appropriate permissions
+3. Complete the online training modules
+4. Begin using CouncilInsight for your department's needs
+
+### For Citizens
+
+1. Visit connect.oakbay.ca and look for the CouncilInsight section
+2. Create an account or log in with existing Connect Oak Bay credentials
+3. Set up your interests and neighborhood preferences
+4. Start exploring council discussions relevant to you
+
+---
+
+## FAQ
+
+**Q: Will historical meetings be available in the system?**
+A: Yes, the initial implementation includes processing the past 12 months of Oak Bay council meetings, with options to add more historical content later.
+
+**Q: How accurate is the automated transcription?**
+A: The system achieves 95%+ accuracy for clear audio and identifies speakers correctly 98% of the time.
+
+**Q: Can I use CouncilInsight without creating an account?**
+A: Yes, the public-facing features are available without an account. Creating an account allows you to set up personalized alerts and save searches.
+
+**Q: How quickly are meetings added to the system?**
+A: Regular council meetings are typically processed within 24 hours of completion. Special meetings and committee meetings are added within 48 hours.
+
+**Q: Can I suggest improvements to the system?**
+A: Absolutely! We welcome community feedback. Use the "Suggest Feature" button in the user menu to submit ideas.
+
+**Q: How does CouncilInsight handle sensitive or in-camera information?**
+A: The system is configured to only process and display public portions of meetings. In-camera discussions are not recorded in the system.
+
+**Q: Is the information legally authoritative?**
+A: While CouncilInsight provides accurate information, the official minutes and recordings remain the legal record of council proceedings.
+
+---
+
+## Contact Information
+
+For additional support or questions, please contact:
+
+- **Email:** support@councilinsight.com
+- **Phone:** (250) 555-1234
+- **Hours:** Monday-Friday, 8:00 AM - 5:00 PM PT
+
+---
+
+Thank you for using CouncilInsight to engage with Oak Bay's governance process!

@@ -1,0 +1,502 @@
+import React, { useState } from 'react';
+import { Search, Calendar, FileText, MessageSquare, ChevronDown, Filter, Play, BarChart2, Tag, AlertCircle, Clock, ArrowRight } from 'lucide-react';
+
+const OakBayCouncilInsight = () => {
+  const [activeTab, setActiveTab] = useState('meetings');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  return (
+    <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Council Meeting Intelligence</h2>
+          <p className="text-gray-600">Search, explore and track Oak Bay Council meetings</p>
+        </div>
+        <div className="flex space-x-2">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search size={18} className="text-gray-400" />
+            </span>
+            <input
+              type="text"
+              placeholder="Search meetings, topics, or decisions..."
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm w-64"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="flex border-b border-gray-200">
+          <button 
+            className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'meetings' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => setActiveTab('meetings')}
+          >
+            <Calendar size={16} className="mr-2" />
+            <span>Recent Meetings</span>
+          </button>
+          <button 
+            className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'topics' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => setActiveTab('topics')}
+          >
+            <Tag size={16} className="mr-2" />
+            <span>Popular Topics</span>
+          </button>
+          <button 
+            className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'decisions' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => setActiveTab('decisions')}
+          >
+            <AlertCircle size={16} className="mr-2" />
+            <span>Recent Decisions</span>
+          </button>
+          <button 
+            className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'analytics' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <BarChart2 size={16} className="mr-2" />
+            <span>Insights</span>
+          </button>
+        </div>
+        
+        {activeTab === 'meetings' && (
+          <div className="p-4">
+            <div className="grid grid-cols-1 gap-4">
+              {/* Meeting 1 */}
+              <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">Regular Council Meeting</h3>
+                    <p className="text-sm text-gray-500">April 4, 2025 - 7:00 PM</p>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Clock size={16} className="mr-1" />
+                    <span>2h 15m</span>
+                  </div>
+                </div>
+                
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                    Housing
+                  </span>
+                  <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                    Community Planning
+                  </span>
+                  <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                    Budget
+                  </span>
+                </div>
+                
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Key Decisions:</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <span className="bg-green-100 text-green-600 rounded-full p-1 mr-2 mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                      <span className="text-sm text-gray-600">Approved updates to the Official Community Plan with 6-1 vote</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-green-100 text-green-600 rounded-full p-1 mr-2 mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                      <span className="text-sm text-gray-600">Approved budget amendments for Henderson Cycling Facility Project</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
+                  <div className="text-sm text-gray-500">
+                    <span className="font-medium">7</span> participants
+                  </div>
+                  <div className="flex space-x-4">
+                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                      <FileText size={16} className="mr-1" />
+                      <span>Minutes</span>
+                    </button>
+                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                      <MessageSquare size={16} className="mr-1" />
+                      <span>Transcript</span>
+                    </button>
+                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                      <Play size={16} className="mr-1" />
+                      <span>Video</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Meeting 2 */}
+              <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">Committee of the Whole</h3>
+                    <p className="text-sm text-gray-500">March 25, 2025 - 6:00 PM</p>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Clock size={16} className="mr-1" />
+                    <span>1h 45m</span>
+                  </div>
+                </div>
+                
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                    Parks & Facilities
+                  </span>
+                  <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                    Public Works
+                  </span>
+                </div>
+                
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Key Discussions:</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <span className="bg-blue-100 text-blue-600 rounded-full p-1 mr-2 mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </span>
+                      <span className="text-sm text-gray-600">Reviewed Carnarvon Park Master Plan implementation timeline</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-blue-100 text-blue-600 rounded-full p-1 mr-2 mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </span>
+                      <span className="text-sm text-gray-600">Discussed Uplands Sewer Separation Project phase completion</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
+                  <div className="text-sm text-gray-500">
+                    <span className="font-medium">5</span> participants
+                  </div>
+                  <div className="flex space-x-4">
+                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                      <FileText size={16} className="mr-1" />
+                      <span>Minutes</span>
+                    </button>
+                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                      <MessageSquare size={16} className="mr-1" />
+                      <span>Transcript</span>
+                    </button>
+                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                      <Play size={16} className="mr-1" />
+                      <span>Video</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-center">
+              <button className="inline-flex items-center text-blue-600 hover:text-blue-800">
+                <span className="font-medium">View all council meetings</span>
+                <ArrowRight size={16} className="ml-1" />
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'topics' && (
+          <div className="p-4">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Most Discussed Topics</h3>
+                <div className="space-y-3">
+                  {[
+                    {name: "Housing", count: 24},
+                    {name: "Parks & Facilities", count: 18},
+                    {name: "Community Planning", count: 15},
+                    {name: "Budget", count: 12},
+                    {name: "Active Transportation", count: 10}
+                  ].map((topic, index) => (
+                    <div key={index} className="flex items-center">
+                      <span className="text-sm font-medium text-gray-700 w-32">{topic.name}</span>
+                      <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${(topic.count / 24) * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className="ml-2 text-sm text-gray-500">{topic.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Rising Topics</h3>
+                <div className="space-y-3">
+                  {[
+                    {name: "Blasting Regulations", trend: 75},
+                    {name: "Housing Action Program", trend: 68},
+                    {name: "Active Transportation", trend: 45},
+                    {name: "Henderson Cycling", trend: 32},
+                    {name: "Carnarvon Park", trend: 28}
+                  ].map((topic, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">{topic.name}</span>
+                      <div className="flex items-center text-green-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span className="ml-1 text-sm">+{topic.trend}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 border border-gray-200 rounded-lg p-4 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Topic Mentions by Month</h3>
+              <div className="h-64 bg-gray-50 rounded-lg flex items-end p-4 space-x-3">
+                {/* Simplified chart visualization */}
+                {[65, 45, 70, 85, 55, 75].map((height, index) => (
+                  <div key={index} className="flex flex-col items-center flex-1">
+                    <div 
+                      className="w-full bg-blue-500 rounded-t-md" 
+                      style={{height: `${height}%`}}
+                    ></div>
+                    <span className="mt-2 text-xs text-gray-600">
+                      {['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'][index]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'decisions' && (
+          <div className="p-4">
+            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Decision</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meeting</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-600">Approved updates to the Official Community Plan with 6-1 vote</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                        Community Planning
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Regular Council Meeting</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Apr 4, 2025</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button className="text-blue-600 hover:text-blue-800">View Context</button>
+                    </td>
+                  </tr>
+                  
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-600">Approved budget amendments for Henderson Cycling Facility Project</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                        Budget
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Regular Council Meeting</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Apr 4, 2025</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button className="text-blue-600 hover:text-blue-800">View Context</button>
+                    </td>
+                  </tr>
+                  
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-600">Adopted Housing Action Program implementation timeline</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                        Housing
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Special Council Meeting</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mar 22, 2025</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button className="text-blue-600 hover:text-blue-800">View Context</button>
+                    </td>
+                  </tr>
+                  
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-600">Approved Carnarvon Park Main Building design concept</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                        Parks & Facilities
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Committee of the Whole</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mar 15, 2025</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button className="text-blue-600 hover:text-blue-800">View Context</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="mt-4 text-center">
+              <button className="inline-flex items-center text-blue-600 hover:text-blue-800">
+                <span className="font-medium">View all council decisions</span>
+                <ArrowRight size={16} className="ml-1" />
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'analytics' && (
+          <div className="p-4">
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="text-gray-500 text-sm mb-1">Council Meetings</div>
+                <div className="text-2xl font-bold text-gray-800">14</div>
+                <div className="text-green-500 text-xs mt-1">+2 from last quarter</div>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="text-gray-500 text-sm mb-1">Avg. Meeting Duration</div>
+                <div className="text-2xl font-bold text-gray-800">1h 52m</div>
+                <div className="text-red-500 text-xs mt-1">+12min from last quarter</div>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="text-gray-500 text-sm mb-1">Total Decisions</div>
+                <div className="text-2xl font-bold text-gray-800">42</div>
+                <div className="text-green-500 text-xs mt-1">+8 from last quarter</div>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="text-gray-500 text-sm mb-1">Active Topics</div>
+                <div className="text-2xl font-bold text-gray-800">16</div>
+                <div className="text-gray-500 text-xs mt-1">Same as last quarter</div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Speaking Time by Council Member</h3>
+                <div className="space-y-3">
+                  {[
+                    {name: "Mayor Johnson", time: 245},
+                    {name: "Councilor Smith", time: 186},
+                    {name: "Councilor Rodriguez", time: 154},
+                    {name: "Councilor Wu", time: 132},
+                    {name: "Councilor Patel", time: 112}
+                  ].map((member, index) => (
+                    <div key={index} className="flex items-center">
+                      <span className="text-sm font-medium text-gray-700 w-32">{member.name}</span>
+                      <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${(member.time / 245) * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className="ml-2 text-sm text-gray-500">{Math.floor(member.time / 60)}m {member.time % 60}s</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Discussion by Neighborhood</h3>
+                <div className="h-64 bg-gray-50 rounded-lg flex items-end justify-around p-4">
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 bg-blue-500 rounded-t-md" style={{ height: '120px' }}></div>
+                    <span className="mt-2 text-sm text-gray-600">North Oak Bay</span>
+                    <span className="text-xs text-gray-500">32% of mentions</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 bg-blue-400 rounded-t-md" style={{ height: '180px' }}></div>
+                    <span className="mt-2 text-sm text-gray-600">Central Oak Bay</span>
+                    <span className="text-xs text-gray-500">48% of mentions</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 bg-blue-300 rounded-t-md" style={{ height: '75px' }}></div>
+                    <span className="mt-2 text-sm text-gray-600">South Oak Bay</span>
+                    <span className="text-xs text-gray-500">20% of mentions</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border border-gray-200 rounded-lg p-4 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Council Decision Timeline</h3>
+              <div className="relative pt-6">
+                <div className="absolute top-0 left-0 w-full border-t border-gray-200"></div>
+                
+                {/* Timeline items */}
+                <div className="mb-8 flex">
+                  <div className="flex flex-col items-center">
+                    <div className="w-4 h-4 bg-blue-600 rounded-full relative z-10"></div>
+                    <div className="h-full border-l-2 border-blue-200"></div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 ml-4 flex-grow">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">Housing Action Program</span>
+                        <p className="text-sm text-gray-600">Adopted implementation timeline</p>
+                      </div>
+                      <span className="text-xs text-gray-500 whitespace-nowrap">Mar 22, 2025</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-8 flex">
+                  <div className="flex flex-col items-center">
+                    <div className="w-4 h-4 bg-blue-600 rounded-full relative z-10"></div>
+                    <div className="h-full border-l-2 border-blue-200"></div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 ml-4 flex-grow">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">Carnarvon Park</span>
+                        <p className="text-sm text-gray-600">Approved Main Building design concept</p>
+                      </div>
+                      <span className="text-xs text-gray-500 whitespace-nowrap">Mar 15, 2025</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-0 flex">
+                  <div className="flex flex-col items-center">
+                    <div className="w-4 h-4 bg-blue-600 rounded-full relative z-10"></div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 ml-4 flex-grow">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">Cycling Facilities</span>
+                        <p className="text-sm text-gray-600">Approved funding for Henderson Road Implementation</p>
+                      </div>
+                      <span className="text-xs text-gray-500 whitespace-nowrap">Feb 28, 2025</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="mt-4 text-center">
+        <button className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+          <span>Explore the full CouncilInsight platform</span>
+          <ArrowRight size={16} className="ml-1" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default OakBayCouncilInsight;
