@@ -257,6 +257,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Direct data upload routes
+  app.post('/api/meetings/upload', async (req: Request, res: Response) => {
+    try {
+      const { data } = req.body;
+      
+      if (!Array.isArray(data)) {
+        return res.status(400).json({ error: 'Invalid data format. Expected an array of meetings.' });
+      }
+      
+      const results = [];
+      
+      for (const meetingData of data) {
+        try {
+          // Ensure dates are properly parsed
+          if (typeof meetingData.date === 'string') {
+            meetingData.date = new Date(meetingData.date);
+          }
+          
+          // Ensure required fields are present
+          if (!meetingData.topics) {
+            meetingData.topics = [];
+          }
+          
+          const meeting = await storage.createMeeting(meetingData);
+          results.push(meeting);
+        } catch (err) {
+          console.error(`Error creating meeting:`, err);
+        }
+      }
+      
+      res.json({ success: true, count: results.length, results });
+    } catch (error) {
+      console.error('Failed to upload meetings data:', error);
+      res.status(500).json({ error: 'Failed to upload meetings data' });
+    }
+  });
+
+  app.post('/api/decisions/upload', async (req: Request, res: Response) => {
+    try {
+      const { data } = req.body;
+      
+      if (!Array.isArray(data)) {
+        return res.status(400).json({ error: 'Invalid data format. Expected an array of decisions.' });
+      }
+      
+      const results = [];
+      
+      for (const decisionData of data) {
+        try {
+          // Ensure dates are properly parsed
+          if (typeof decisionData.date === 'string') {
+            decisionData.date = new Date(decisionData.date);
+          }
+          
+          // Ensure required fields are present
+          if (!decisionData.topics) {
+            decisionData.topics = [];
+          }
+          
+          const decision = await storage.createDecision(decisionData);
+          results.push(decision);
+        } catch (err) {
+          console.error(`Error creating decision:`, err);
+        }
+      }
+      
+      res.json({ success: true, count: results.length, results });
+    } catch (error) {
+      console.error('Failed to upload decisions data:', error);
+      res.status(500).json({ error: 'Failed to upload decisions data' });
+    }
+  });
+
+  app.post('/api/topics/upload', async (req: Request, res: Response) => {
+    try {
+      const { data } = req.body;
+      
+      if (!Array.isArray(data)) {
+        return res.status(400).json({ error: 'Invalid data format. Expected an array of topics.' });
+      }
+      
+      const results = [];
+      
+      for (const topicData of data) {
+        try {
+          // Ensure dates are properly parsed
+          if (typeof topicData.lastDiscussed === 'string') {
+            topicData.lastDiscussed = new Date(topicData.lastDiscussed);
+          }
+          
+          const topic = await storage.createTopic(topicData);
+          results.push(topic);
+        } catch (err) {
+          console.error(`Error creating topic:`, err);
+        }
+      }
+      
+      res.json({ success: true, count: results.length, results });
+    } catch (error) {
+      console.error('Failed to upload topics data:', error);
+      res.status(500).json({ error: 'Failed to upload topics data' });
+    }
+  });
+
+  // Documentation upload route
+  app.post('/api/documents/upload', async (req: Request, res: Response) => {
+    try {
+      const { documentType, meetingId, content, title } = req.body;
+      
+      if (!documentType || !content) {
+        return res.status(400).json({ error: 'Missing required fields: documentType and content are required' });
+      }
+      
+      // This is a placeholder for actual document processing
+      // In a real implementation, we would process and store the document
+      // For now, we'll just acknowledge receipt
+      
+      res.json({ 
+        success: true, 
+        message: `Document received: ${title || 'Untitled'} (${documentType})`,
+        documentId: Date.now().toString() 
+      });
+    } catch (error) {
+      console.error('Failed to process document upload:', error);
+      res.status(500).json({ error: 'Failed to process document upload' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

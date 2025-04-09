@@ -55,7 +55,7 @@ export default function DataIngestionPage() {
 
   // Fetch robots from Maxun
   const {
-    data: robots,
+    data: robotsData,
     isLoading: robotsLoading,
     error: robotsError,
     refetch: refetchRobots
@@ -63,21 +63,27 @@ export default function DataIngestionPage() {
     queryKey: ["/api/maxun/robots"],
     refetchInterval: 10000, // Refresh every 10 seconds
   });
+  
+  // Extract robots from the response
+  const robots = robotsData as { robots: MaxunRobot[] } | undefined;
 
   // Fetch job details when a job is selected
   const {
-    data: jobDetails,
+    data: jobDetailsData,
     isLoading: jobDetailsLoading,
     refetch: refetchJobDetails
   } = useQuery({
     queryKey: ["/api/maxun/jobs", selectedJobId],
     enabled: !!selectedJobId,
   });
+  
+  // Extract job from the response
+  const jobDetails = jobDetailsData as { job: MaxunJob } | undefined;
 
   // Run robot mutation
   const runRobotMutation = useMutation({
     mutationFn: (robotId: string) => {
-      return apiRequest(`/api/maxun/robots/${robotId}/run`, "POST");
+      return apiRequest<{ jobId: string }>(`/api/maxun/robots/${robotId}/run`, "POST");
     },
     onSuccess: (data) => {
       setSelectedJobId(data.jobId);
@@ -101,7 +107,7 @@ export default function DataIngestionPage() {
   const syncDataMutation = useMutation({
     mutationFn: (jobId: string) => {
       setSyncStatus("loading");
-      return apiRequest(`/api/maxun/sync/${jobId}`, "POST");
+      return apiRequest<{ success: boolean }>(`/api/maxun/sync/${jobId}`, "POST");
     },
     onSuccess: () => {
       setSyncStatus("success");
@@ -132,7 +138,7 @@ export default function DataIngestionPage() {
         // Parse the JSON data
         const jsonData = JSON.parse(uploadData);
         // Upload based on selected type
-        return apiRequest(`/api/${uploadType}/upload`, "POST", { data: jsonData });
+        return apiRequest<{ success: boolean; count: number }>(`/api/${uploadType}/upload`, "POST", { data: jsonData });
       } catch (e) {
         throw new Error("Invalid JSON format");
       }
@@ -158,7 +164,7 @@ export default function DataIngestionPage() {
 
   // Status badge component
   const StatusBadge = ({ status }: { status: string }) => {
-    let variant = "outline";
+    let variant: "outline" | "secondary" | "default" | "destructive" = "outline";
     
     if (status === "running" || status === "pending") variant = "secondary";
     if (status === "completed" || status === "success") variant = "default";
@@ -335,7 +341,8 @@ export default function DataIngestionPage() {
                         variant="outline" 
                         onClick={() => {
                           // Empty template data based on selected type
-                          let templateData = [];
+                          type TemplateData = Array<Record<string, any>>;
+                          let templateData: TemplateData = [];
                           if (uploadType === "meetings") {
                             templateData = [
                               {
