@@ -4,10 +4,22 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg');
 const { Storage } = require('@google-cloud/storage');
+const adaptiveScraperRoutes = require('./api-routes');
 
 // Initialize Express app
 const app = express();
 app.use(express.json());
+
+// Configure environment variables
+require('dotenv').config();
+
+// Check for the Gemini API key
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (GEMINI_API_KEY) {
+  console.log('Gemini API key detected, adaptive scraping enabled');
+} else {
+  console.log('No Gemini API key found. To enable adaptive scraping, set GEMINI_API_KEY environment variable');
+}
 
 // Enable CORS for Vercel frontend
 app.use((req, res, next) => {
@@ -152,8 +164,20 @@ async function storeResultsInGCS(jobId, results) {
 
 // API endpoints
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    time: new Date().toISOString(),
+    features: {
+      robots: true,
+      adaptiveScraping: !!GEMINI_API_KEY
+    }
+  });
 });
+
+// Register adaptive scraper routes if Gemini API key is available
+if (GEMINI_API_KEY) {
+  app.use('/api/adaptive', adaptiveScraperRoutes);
+}
 
 // List available robots
 app.get('/api/maxun/robots', (req, res) => {

@@ -1,0 +1,219 @@
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+#!/bin/bash
+set -e -E
+
+GEMINI_API_KEY="$GEMINI_API_KEY"
+MODEL_ID="gemini-2.5-pro-preview-03-25"
+GENERATE_CONTENT_API="streamGenerateContent"
+
+upload_to_gemini() {
+  local FILE_PATH="$1"
+  local DISPLAY_NAME="$2"
+
+  local MIME_TYPE
+  MIME_TYPE=$(file -b --mime-type "${FILE_PATH}")
+  local NUM_BYTES
+  NUM_BYTES=$(wc -c < "${FILE_PATH}")
+
+  local tmp_header_file
+  tmp_header_file="upload-header.tmp"
+
+  curl "https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}" \
+    -D "${tmp_header_file}" \
+    -H "X-Goog-Upload-Protocol: resumable" \
+    -H "X-Goog-Upload-Command: start" \
+    -H "X-Goog-Upload-Header-Content-Length: ${NUM_BYTES}" \
+    -H "X-Goog-Upload-Header-Content-Type: ${MIME_TYPE}" \
+    -H "Content-Type: application/json" \
+    -d "{\"file\": {\"display_name\": \"${DISPLAY_NAME}\"}}" 2> /dev/null
+
+  local upload_url
+  upload_url=$(grep -i "x-goog-upload-url: " "${tmp_header_file}" | cut -d" " -f2 | tr -d "\r")
+  rm "${tmp_header_file}"
+
+  # Upload the actual bytes.
+  curl "${upload_url}" \
+    -H "Content-Length: ${NUM_BYTES}" \
+    -H "X-Goog-Upload-Offset: 0" \
+    -H "X-Goog-Upload-Command: upload, finalize" \
+    --data-binary "@${FILE_PATH}" 2> /dev/null > file_info.json
+
+  local file_uri
+  file_uri=$(jq -r ".file.uri" file_info.json)
+  echo "${file_uri}"
+  rm file_info.json
+}
+
+# Make the file available in local system working directory
+FILE_0="$(upload_to_gemini "1xOHG0Bx01EMMGlUL_zYkXf2a-gbTZQmh" "$(basename 1xOHG0Bx01EMMGlUL_zYkXf2a-gbTZQmh)")"
+FILE_1="$(upload_to_gemini "1VG1ZWSbC5TGVxwq3s4pH9b3SyQ-go8Hl" "$(basename 1VG1ZWSbC5TGVxwq3s4pH9b3SyQ-go8Hl)")"
+
+cat << EOF > request.json
+{
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "fileData": {
+              "mimeType": "application/octet-stream",
+              "fileUri": "$FILE_0"
+            }
+          },
+          {
+            "fileData": {
+              "mimeType": "application/octet-stream",
+              "fileUri": "$FILE_1"
+            }
+          },
+          {
+            "text": "can we please optimize this: You are a financial analyst assistant AI assigned to a company. You will perform the requested financial analysis based on the relevant information provided.\n\nRules:\n* Do not hallucinate.\n* Do not use the internet.\n* Use only the information provided.\n* Write only in English.\n* If the user asks something that is not related to the financial analysis of the company, respond with, \"I\\'m sorry. I only help with financial analysis. Please try again.\"\n\nInstructions:\n1. If the user requests an income statement analysis:\na. Use the Statements of Operations provided in the Relevant Information as data.\nb. Calculate and discuss the gross profit margin.\nc. Calculate and discuss the operating profit margin.\nd. Calculate and discuss the net profit margin.\ne. Provide recommendations based on the data.\n\n2. If the user requests a cash flow analysis:\na. Use the Statements of Cash Flows provided in the Relevant Information as data.\nb. Discuss the operating cash flow.\nc. Discuss the investing cash flow.\nd. Discuss the financing cash flow.\ne. Provide recommendations based on the data.\n\n3. If the user requests an efficiency analysis:\na. Use the Balance Sheets and Statements of Operations provided in the Relevant Information as data.\nb. Calculate and discuss asset turnover ratio.\nc. Calculate and discuss inventory turnover ratio.\nd. Provide recommendations based on the data.\n\n[Relevant Information]\n\nStatements of Operations 2020–2022:\n| Function | 2020 | 2021| 2022 |\n|---|---|---|---|\n| Total net sales | $22,000 | $26,000 | $35,000 |\n| Cost of sales | $5,000 | $5,500 | $7,000 |\n| Marketing | $500 | $600 | $700 |\n| Operating Expenses| $450 | $550 | $650 |\n| Interest Income | $5 | $6 | $10|\n| Earnings per share | $0.50 | $0.75 | $0.80 |\n| Taxes | $7,000 | $7,800 | $8,900 |\n\nStatements of Cash Flows:\n| Function | 2020 | 2021| 2022 |\n|---|---|---|---|\n| Net Income | $16,050 | $26,000 | $35,000 |\n| Taxes | $7,000 | $5,500 | $7,000 |\n| Inventories | 3,000 | $600 | $700 |\n| Net cash | $12,050 | $550 | $650 |\n| Purchase of equipment | ($1,000) | $0 | ($250) |\n| Notes payable | $2,000 | $3,000 | $3,300 |\n| Bank loan | $5,000 | $0 | $0 |\n| Payment on line of credit | $1,000 | $1,000 | $1,000 |\n\nBalance Sheets:\n| Function | 2020 | 2021| 2022 |\n|---|---|---|---|\n| Cash | $12,050 | $15,050 | $16,500 |\n| Inventories | $3,000 | $600 | $700 |\n| Current Assets | $15,050 | $15,650 | $17,200 |\n| Accounts Payable | $8,000 | $10,000 | $15,000 |\n| Current Liabilities | $8,000 | $10,000 | $15,000 |\n| Shareholder Equity | $5,000 | $6,000 | $8,000 | for usage by municipalities and ill give you an example document and heres the system prompt we first need to refine for the system instructions    "
+          },
+        ]
+      },
+      {
+        "role": "model",
+        "parts": [
+          {
+            "text": "Here's a thinking process that leads to the refined prompt:\n\n1.  **Understand the Goal:** The user wants to refine a system prompt for an AI financial analyst assistant. This assistant needs to perform specific financial analyses (income statement, cash flow, efficiency) for a company, using *only* provided data, without hallucinating or going off-topic. The target users are municipalities, and the context involves building 0-to-1 web apps for local governments (though this context seems more related to the *reason* for building the prompt, not the prompt's *content* itself). The user provided an example document (Oak Bay Financial Statements) and a draft prompt.\n\n2.  **Analyze the Original Prompt:**\n    *   **Role:** \"financial analyst assistant AI assigned to a company.\" - Clear.\n    *   **Task:** \"perform the requested financial analysis based on the relevant information provided.\" - Clear.\n    *   **Rules:**\n        *   \"Do not hallucinate.\" - Essential.\n        *   \"Do not use the internet.\" - Essential.\n        *   \"Use only the information provided.\" - Essential, reinforces the previous two.\n        *   \"Write only in English.\" - Standard constraint.\n        *   \"If the user asks something that is not related to the financial analysis of the company, respond with, 'I'm sorry. I only help with financial analysis. Please try again.'\" - Good guardrail for staying on topic.\n    *   **Instructions:** Broken down by analysis type (Income Statement, Cash Flow, Efficiency).\n        *   **Income Statement:**\n            *   Data source: \"Statements of Operations\" - Correct.\n            *   Calculations/Discussions: Gross Profit Margin, Operating Profit Margin, Net Profit Margin. - Standard and relevant.\n            *   Output: \"Provide recommendations based on the data.\" - Good, adds value.\n        *   **Cash Flow:**\n            *   Data source: \"Statements of Cash Flows\" - Correct.\n            *   Discussions: Operating, Investing, Financing cash flow. - Standard breakdown.\n            *   Output: \"Provide recommendations based on the data.\" - Good.\n        *   **Efficiency:**\n            *   Data source: \"Balance Sheets and Statements of Operations\" - Correct for these ratios.\n            *   Calculations/Discussions: Asset Turnover Ratio, Inventory Turnover Ratio. - Standard efficiency ratios.\n            *   Output: \"Provide recommendations based on the data.\" - Good.\n    *   **[Relevant Information] Placeholder:** Indicates where the actual data will be injected. The *example* provided (Oak Bay SOFI) is helpful context for the *type* of data but isn't the actual data for the prompt itself. The prompt includes *sample* data tables (Statements of Operations, Cash Flows, Balance Sheets). *Correction:* The prompt *does* include sample data tables. These seem generic and might be placeholders or a simplified example *within* the prompt itself. It's important to clarify if this specific data should *always* be used or if it's just an example *format*. Assuming it's placeholder/example format.\n    *   **Target User Context (Municipalities/Local Gov Web Apps):** The current prompt is generic (\"a company\"). It doesn't specifically address municipal finance nuances (e.g., fund accounting, PSAB standards, focus on surplus/deficit vs. profit, specific municipal ratios). The *Oak Bay* example highlights this disconnect.\n\n3.  **Identify Areas for Improvement/Refinement:**\n    *   **Clarity and Structure:** The prompt is reasonably clear, but could be slightly tighter. Use formatting (like markdown) for better readability.\n    *   **Specificity for Local Government:** This is the biggest gap. The prompt uses corporate finance terminology (gross profit, operating profit, net profit, shareholder equity, net income) which doesn't directly map to municipal finance (which uses terms like annual surplus/deficit, accumulated surplus, net financial assets, PSAB standards). The ratios might also need adjustment (e.g., focusing on debt service coverage, tax revenue dependency, reserve levels instead of typical corporate efficiency ratios).\n    *   **Data Handling:** Explicitly state *how* the data should be presented or injected (e.g., within the `[Relevant Information]` block). Clarify the status of the sample tables in the original prompt.\n    *   **Persona Reinforcement:** Make the AI's persona slightly more explicit – professional, analytical, data-driven.\n    *   **Guardrails:** The \"off-topic\" guardrail is good. Add one for insufficient data?\n    *   **Output Format:** Should the output be a report? Bullet points? Specify desired format.\n    *   **Calculations:** Explicitly state that calculations *must* be shown or explained, not just the result.\n\n4.  **Drafting the Refined Prompt (Iterative Process):**\n\n    *   **Attempt 1 (Focus on Local Gov):** Start by changing terminology. Replace \"company\" with \"municipality\" or \"local government entity\". Replace \"profit\" with \"surplus/deficit\". Replace corporate ratios with municipal ones. *Problem:* This requires defining *which* municipal ratios. The original prompt specified certain corporate ones. Stick closer to the original structure for now but flag the terminology issue.\n\n    *   **Attempt 2 (Refine Structure & Clarity, Acknowledge Local Gov Context):**\n        *   Use markdown for structure (headings, lists).\n        *   Rephrase the role slightly: \"You are an AI assistant specializing in the financial analysis of local government entities...\"\n        *   Keep the core rules. Add a rule about insufficient data: \"If the provided data is insufficient to perform a requested calculation, state that clearly.\"\n        *   Keep the main instruction structure (Income/Operations, Cash Flow, Efficiency).\n        *   *Address Terminology:* Add a note within the instructions: \"Adapt standard financial terminology (like 'profit margin') to the context of municipal finance (e.g., relating to operating surplus) where appropriate, using the provided data fields.\" This is a compromise – acknowledges the need but doesn't force specific municipal ratios not originally requested. *Self-Correction:* The original prompt asked for *specific* profit margins. Changing them fundamentally alters the request. Maybe it's better to keep the *requested* calculations but add a *caveat* about their applicability to local gov, or ask the user if they want *different* calculations suitable for local gov. Let's keep the original calculations but refine the *interpretation* instruction.\n        *   Refine calculation instructions: \"For each requested analysis, clearly state the formula used, show the calculation based *only* on the [Relevant Information], and discuss the result's significance for the entity.\"\n        *   Refine recommendations: \"Recommendations should be actionable and directly derived from the analysis of the provided data.\"\n        *   Clarify data injection: \"The specific financial data for the entity will be provided within the `[Relevant Information]` section below.\"\n\n    *   **Attempt 3 (Integrate Oak Bay Example Insights & Final Polish):**\n        *   Review the Oak Bay document. It uses \"Statement of Operations and Accumulated Surplus\", \"Annual surplus\", \"Accumulated surplus\", \"Net financial assets\". It has specific sections like \"General government\", \"Protective services\", etc. This reinforces the need for the AI to work with *these specific terms* if they appear in the `[Relevant Information]`.\n        *   Add explicit mention of Public Sector Accounting Standards (PSAB) if relevant to the *interpretation*, though the prompt doesn't ask for compliance checks. Maybe add to the persona: \"... familiar with typical local government financial reporting structures (like those following PSAB in Canada, using Statements of Operations, Financial Position, etc.).\"\n        *   Make the analysis sections more robust:\n            *   **Operations Analysis (Instead of Income):** Use the term \"Statement of Operations\". Specify calculating margins based on \"Annual Surplus\" if \"Net Income\" isn't present. Calculate `(Annual Surplus / Total Revenue)` as a proxy for Net Margin. Calculate `(Revenue - Specific Operating Expenses) / Revenue` as a proxy for Operating Margin (needs careful definition based on available data fields). Calculate `(Total Revenue - Cost of Specific Services [if applicable]) / Total Revenue` as a proxy for Gross Margin (highly dependent on data). *Self-Correction:* This requires *guessing* how to map. Let's stick to the *original* requested calculations (Gross, Operating, Net Profit Margins) but instruct the AI to *use the provided data fields* even if the names aren't perfect matches (e.g., use \"Total net sales\" or \"Total revenue\" as the denominator; use \"Total net sales - Cost of sales\" for Gross Profit, etc.) and to *note any terminology mismatches* in its analysis. This is safer than inventing new calculations.\n            *   **Cash Flow:** Keep as is, standard sections apply.\n            *   **Efficiency:** Keep Asset Turnover and Inventory Turnover. Note that Inventory Turnover might be less relevant or calculated differently for a municipality (supplies inventory vs. goods for sale). Instruct the AI to mention this context. `Asset Turnover = Total Revenue / Average Total Assets`. `Inventory Turnover = Cost of Goods Sold (or equivalent like 'Cost of Sales' or 'Supplies Expense') / Average Inventory`. Average = (Beginning + Ending) / 2. The AI will need multiple years of Balance Sheet data for averages. Add instruction: \"Calculate averages using data from the current and prior year provided in the Balance Sheets. If prior year data is missing, state that the average cannot be calculated and use the end-of-year figure, noting the limitation.\"\n        *   Add a concluding sentence to the persona: \"Your goal is to provide clear, data-driven financial insights tailored to the structure of local government reporting.\"\n        *   Refine the off-topic response slightly for tone.\n        *   Ensure the placeholder `[Relevant Information]` is clearly marked. Remove the sample tables from the prompt itself unless they are *always* meant to be the default data. Assume they were just examples in the draft and remove them for the final prompt, relying solely on the data injected into `[Relevant Information]`.\n\n5.  **Final Review:** Read through the entire refined prompt. Does it meet the user's goal? Is it clear? Does it handle the local government context appropriately given the constraints? Are the rules and instructions actionable and unambiguous? Yes, it seems much more robust and tailored now."
+          },
+          {
+            "text": "Okay, AI expert, let's refine that system prompt. The goal is to create a highly reliable AI assistant focused *specifically* on analyzing municipal financial data provided to it, without external knowledge or hallucination, suitable for integration into tools for local governments.\n\nHere's an optimized version of your prompt, incorporating best practices for clarity, constraint definition, and relevance to the local government context implicitly suggested by the Oak Bay example:\n\n```prompt\n**System Prompt:**\n\nYou are a specialized AI Financial Analyst Assistant dedicated to analyzing local government financial information. Your primary function is to perform specific financial analyses based *exclusively* on the data provided in the [Relevant Information] section. You must adhere strictly to the rules and instructions below.\n\n**Core Role:**\n*   Act as a data-driven financial analyst for a local government entity (e.g., municipality, district).\n*   Interpret and analyze financial statement data provided to you.\n*   Generate insights and recommendations based *only* on the provided data.\n*   Maintain a professional, objective, and analytical tone.\n\n**Critical Rules:**\n1.  **No Hallucination:** Do not invent, assume, or infer any data or information not explicitly present in the [Relevant Information].\n2.  **Data Bound:** Use ONLY the data provided within the [Relevant Information] section for all calculations and discussions. Do not use any prior knowledge or external data sources, including the internet.\n3.  **Stay On Topic:** Only perform the requested financial analyses. If the user asks for information or tasks outside the scope of analyzing the provided financial data (e.g., general knowledge, non-financial topics, operational advice unrelated to financials), respond politely with: \"I'm sorry. I specialize in analyzing the provided local government financial data. Could you please ask a question related to income statement, cash flow, or efficiency analysis based on the information given?\"\n4.  **Insufficient Data:** If the provided data is insufficient to perform a specific calculation or analysis requested (e.g., missing required line items, lack of comparative data for ratios), clearly state what data is missing and that the analysis cannot be completed accurately.\n5.  **Language:** Communicate only in English.\n6.  **Calculations:** For any calculated ratio or metric, clearly state the formula used before presenting the calculation and result.\n\n**Instructions for Analysis Tasks:**\n\nWhen a user requests a specific analysis, follow these steps precisely:\n\n**1. Operations/Income Statement Analysis:**\n    a.  **Data Source:** Use the \"Statement of Operations\" (or similarly named table like \"Statement of Operations and Accumulated Surplus\") provided in the [Relevant Information]. Note: Municipalities often report an \"Annual Surplus/Deficit\" rather than \"Net Income\". Use the terminology provided in the data.\n    b.  **Gross Profit Margin Calculation:**\n        *   Formula: `Gross Profit Margin = (Total Revenue - Cost of Sales/Services) / Total Revenue`\n        *   Identify the closest equivalents for \"Total Revenue\" and \"Cost of Sales/Services\" in the provided data. *Clearly state which line items you are using.*\n        *   Calculate the margin for the available periods.\n        *   Discuss the trend and significance of the Gross Profit Margin, noting its interpretation in a municipal context (e.g., cost recovery on specific services if applicable).\n    c.  **Operating Profit Margin Calculation:**\n        *   Formula: `Operating Profit Margin = (Operating Income / Total Revenue)` where `Operating Income` is typically `Total Revenue - Cost of Sales/Services - Operating Expenses (e.g., Marketing, Admin, specific departmental costs)`.\n        *   Identify the closest equivalents for \"Total Revenue\", \"Cost of Sales/Services\", and \"Operating Expenses\" in the provided data. *Clearly state which line items you are using.* If an \"Operating Income\" or \"Annual Surplus Before Taxes/Transfers\" line item exists, state this and use it if appropriate for the formula.\n        *   Calculate the margin for the available periods.\n        *   Discuss the trend and significance of the Operating Profit Margin (e.g., efficiency in core service delivery relative to revenues).\n    d.  **Net Profit/Surplus Margin Calculation:**\n        *   Formula: `Net Margin = (Net Income or Annual Surplus / Total Revenue)`\n        *   Identify \"Total Revenue\" and the final bottom-line figure (e.g., \"Net Income\", \"Annual Surplus/Deficit\") in the provided data. *Clearly state which line items you are using.*\n        *   Calculate the margin for the available periods.\n        *   Discuss the trend and significance of this margin (e.g., overall financial performance and ability to generate surplus).\n    e.  **Recommendations:** Provide specific, actionable recommendations derived *directly* from the margin analysis and trends observed in the provided data (e.g., investigate rising cost categories, explore revenue enhancement if margins are declining).\n\n**2. Cash Flow Analysis:**\n    a.  **Data Source:** Use the \"Statement of Cash Flows\" provided in the [Relevant Information].\n    b.  **Operating Cash Flow (OCF):**\n        *   Identify the Net Cash Flow from Operating Activities.\n        *   Discuss its significance (e.g., ability to generate cash from core operations), the trend over the periods provided, and major drivers (e.g., changes in working capital, net income/surplus adjustments).\n    c.  **Investing Cash Flow (ICF):**\n        *   Identify the Net Cash Flow from Investing Activities.\n        *   Discuss its significance (e.g., investments in capital assets), the trend, and major components (e.g., purchase/sale of tangible capital assets, investments).\n    d.  **Financing Cash Flow (FCF):**\n        *   Identify the Net Cash Flow from Financing Activities.\n        *   Discuss its significance (e.g., debt issuance/repayment, equity/reserve contributions), the trend, and major components.\n    e.  **Recommendations:** Provide specific, actionable recommendations derived *directly* from the cash flow analysis (e.g., assess sustainability of capital spending based on OCF, review debt levels based on FCF).\n\n**3. Efficiency Analysis:**\n    a.  **Data Source:** Use the \"Statement of Financial Position\" (or Balance Sheet) and the \"Statement of Operations\" (or equivalent) provided in the [Relevant Information]. Note: Requires at least two periods of Balance Sheet data for averages.\n    b.  **Asset Turnover Ratio Calculation:**\n        *   Formula: `Asset Turnover Ratio = Total Revenue / Average Total Assets`\n        *   Identify \"Total Revenue\" from the Statement of Operations.\n        *   Calculate `Average Total Assets = (Beginning Total Assets + Ending Total Assets) / 2` using the Statement of Financial Position data. If only one period of balance sheet data is available, state this limitation and use Ending Total Assets, noting it's not an average. *Clearly state which line items you are using.*\n        *   Calculate the ratio for the available periods.\n        *   Discuss the trend and significance (e.g., efficiency in using assets to generate revenue/service potential).\n    c.  **Inventory Turnover Ratio Calculation:** (Note: Inventory type and relevance vary in municipalities - often relates to supplies).\n        *   Formula: `Inventory Turnover = Cost of Sales/Supplies Expense / Average Inventory`\n        *   Identify the relevant expense (\"Cost of Sales\", \"Supplies Expense\", or nearest equivalent) from the Statement of Operations. *Clearly state which line item you are using.*\n        *   Calculate `Average Inventory = (Beginning Inventory + Ending Inventory) / 2` using the Statement of Financial Position data. If only one period of balance sheet data is available, state this limitation and use Ending Inventory, noting it's not an average. *Clearly state which line items you are using.*\n        *   Calculate the ratio for the available periods.\n        *   Discuss the trend and significance (e.g., efficiency in managing operational supplies), noting the specific context of municipal inventory if apparent from data labels.\n    d.  **Recommendations:** Provide specific, actionable recommendations derived *directly* from the efficiency ratio analysis (e.g., investigate reasons for declining asset turnover, review inventory management practices if turnover is very low/high for supplies).\n\n**[Relevant Information]**\n*(This section will be dynamically populated with the specific financial statements - Statement of Operations, Statement of Cash Flows, Statement of Financial Position/Balance Sheet - for the local government entity being analyzed).*\n```\n\n**Key Improvements and Rationale:**\n\n1.  **Specificity to Local Government:** Explicitly states the AI deals with \"local government financial information\" and mentions relevant terms like \"Annual Surplus/Deficit,\" \"Statement of Financial Position,\" and \"Tangible Capital Assets.\"\n2.  **Emphasis on Data Source:** Repeatedly stresses using *only* the `[Relevant Information]` and clearly stating which line items are used for calculations, reducing ambiguity and hallucination risk.\n3.  **Handling Terminology Differences:** Instructs the AI on how to handle common differences between corporate and municipal terminology (e.g., Surplus vs. Profit) and how to identify the closest data equivalents.\n4.  **Clear Formulas:** Mandates stating the formula *before* the calculation for transparency.\n5.  **Insufficient Data Handling:** Provides a clear protocol for when data is missing.\n6.  **Averaging Requirement for Ratios:** Specifies the need for averaging in turnover ratios and how to handle cases with insufficient data points.\n7.  **Contextual Interpretation:** Guides the AI to discuss the significance of metrics *within a municipal context* where possible.\n8.  **Actionable Recommendations:** Reinforces that recommendations must be data-driven and specific.\n9.  **Structure and Readability:** Uses markdown and clear headings for better organization.\n10. **Robust Guardrails:** Refines the \"off-topic\" response and adds the \"insufficient data\" rule.\n\nThis refined prompt provides clearer instructions, sets stronger boundaries, and is better tailored to the nuances of local government financial data, making the AI assistant more reliable and useful for your target application. Remember to inject the actual financial statements from documents like the Oak Bay SOFI into the `[Relevant Information]` section when using the prompt."
+          },
+        ]
+      },
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "INSERT_INPUT_HERE"
+          },
+        ]
+      },
+    ],
+    "systemInstruction": {
+      "parts": [
+        {
+            "text": "you are an ai expert and you are helping craft and engineer prompts for usage to build world class 0 to 1 web apps for local governments "
+        },
+      ]
+    },
+    "generationConfig": {
+      "responseMimeType": "text/plain",
+    },
+}
+EOF
+
+curl \
+-X POST \
+-H "Content-Type: application/json" \
+"https://ge
