@@ -8,7 +8,7 @@
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
     "@google-cloud/storage": "^7.11.0",
-    "@google/genai": "^0.24.0",
+    "@google/genai": "latest",
     "@mui/icons-material": "^5.5.1",
     "@mui/lab": "^5.0.0-alpha.80",
     "@mui/material": "^5.6.2",
