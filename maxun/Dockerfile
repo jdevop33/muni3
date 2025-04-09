@@ -42,25 +42,10 @@ RUN apt-get update && apt-get install -y \
     wget \
     xdg-utils
 
-# Create package.json if it doesn't exist
-RUN echo '{"name":"maxun-service","version":"1.0.0","main":"server.js","dependencies":{"express":"^4.18.2","puppeteer":"^21.0.0","pg":"^8.11.3","@neondatabase/serverless":"^0.6.0","@google-cloud/storage":"^7.0.0"}}' > package.json
-
-# Install dependencies
-RUN npm install
-
-# Copy application files
-COPY . ./
-
-# Create robots directory if it doesn't exist
-RUN mkdir -p robots
-
-# Expose port
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
+COPY . .
 EXPOSE 8080
-
-# Set environment variables
-ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOST=0.0.0.0
-
-# Start the server
 CMD ["node", "server.js"]
