@@ -3,6 +3,7 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { Analytics } from "@vercel/analytics/react"; // Added Vercel Analytics
 import Header from "@/components/ui/header";
 import Sidebar from "@/components/ui/sidebar";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -13,7 +14,7 @@ import Meetings from "@/pages/meetings";
 import Topics from "@/pages/topics";
 import Decisions from "@/pages/decisions";
 import DataIngestion from "@/pages/data-ingestion";
-import Analytics from "@/pages/analytics";
+import AnalyticsPage from "@/pages/analytics"; // Renamed Analytics page component import
 import Neighborhoods from "@/pages/neighborhoods";
 import MultimodalPage from "@/pages/multimodal";
 import HousingProject from "@/pages/projects/housing";
@@ -54,7 +55,8 @@ function Router() {
                 <ProtectedRoute path="/meetings" component={() => <Meetings />} />
                 <ProtectedRoute path="/topics" component={() => <Topics />} />
                 <ProtectedRoute path="/decisions" component={() => <Decisions />} />
-                <ProtectedRoute path="/analytics" component={() => <Analytics />} />
+                {/* Use the renamed import for the Analytics page component */}
+                <ProtectedRoute path="/analytics" component={() => <AnalyticsPage />} /> 
                 <ProtectedRoute path="/neighborhoods" component={() => <Neighborhoods />} />
                 <ProtectedRoute path="/multimodal" component={() => <MultimodalPage />} />
                 <ProtectedRoute path="/projects/housing" component={() => <HousingProject />} />
@@ -86,6 +88,7 @@ function App() {
       <AuthProvider>
         <Router />
         <Toaster />
+        <Analytics /> {/* Added Vercel Analytics component */}
       </AuthProvider>
     </QueryClientProvider>
   );
