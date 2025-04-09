@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/ui/header";
 import Sidebar from "@/components/ui/sidebar";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
+import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import Meetings from "@/pages/meetings";
 import Topics from "@/pages/topics";
@@ -34,30 +37,43 @@ function Router() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="flex min-h-[calc(100vh-64px)]">
-        <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
-        <main className="flex-1 overflow-auto">
-          <Switch>
-            <Route path="/" component={Dashboard} />
-            <Route path="/meetings" component={Meetings} />
-            <Route path="/topics" component={Topics} />
-            <Route path="/decisions" component={Decisions} />
-            <Route path="/analytics" component={Analytics} />
-            <Route path="/neighborhoods" component={Neighborhoods} />
-            <Route path="/projects/housing" component={HousingProject} />
-            <Route path="/projects/transportation" component={TransportationProject} />
-            <Route path="/projects/parks" component={ParksProject} />
-            <Route path="/projects/planning" component={PlanningProject} />
-            <Route path="/data-ingestion" component={DataIngestion} />
-            <Route path="/alerts" component={Alerts} />
-            <Route path="/saved" component={Saved} />
-            <Route path="/settings" component={Settings} />
-            {/* Fallback to 404 */}
-            <Route component={NotFound} />
-          </Switch>
-        </main>
-      </div>
+      <Switch>
+        <Route path="/auth">
+          <AuthPage />
+        </Route>
+        
+        <Route>
+          {/* All other routes have the standard layout with header and sidebar */}
+          <Header />
+          <div className="flex min-h-[calc(100vh-64px)]">
+            <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
+            <main className="flex-1 overflow-auto">
+              <Switch>
+                <ProtectedRoute path="/" component={() => <Dashboard />} />
+                <ProtectedRoute path="/meetings" component={() => <Meetings />} />
+                <ProtectedRoute path="/topics" component={() => <Topics />} />
+                <ProtectedRoute path="/decisions" component={() => <Decisions />} />
+                <ProtectedRoute path="/analytics" component={() => <Analytics />} />
+                <ProtectedRoute path="/neighborhoods" component={() => <Neighborhoods />} />
+                <ProtectedRoute path="/projects/housing" component={() => <HousingProject />} />
+                <ProtectedRoute path="/projects/transportation" component={() => <TransportationProject />} />
+                <ProtectedRoute path="/projects/parks" component={() => <ParksProject />} />
+                <ProtectedRoute path="/projects/planning" component={() => <PlanningProject />} />
+                <ProtectedRoute 
+                  path="/data-ingestion" 
+                  component={() => <DataIngestion />} 
+                  requiredRoles={["admin", "staff"]} 
+                />
+                <ProtectedRoute path="/alerts" component={() => <Alerts />} />
+                <ProtectedRoute path="/saved" component={() => <Saved />} />
+                <ProtectedRoute path="/settings" component={() => <Settings />} />
+                {/* Fallback to 404 */}
+                <Route component={NotFound} />
+              </Switch>
+            </main>
+          </div>
+        </Route>
+      </Switch>
     </div>
   );
 }
@@ -65,8 +81,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

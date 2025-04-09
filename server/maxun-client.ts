@@ -305,7 +305,7 @@ export const router = Router();
 
 // Instantiate the client with environment variables
 const maxunClient = new MaxunClient({
-  baseUrl: process.env.MAXUN_URL || 'http://localhost:8080',
+  baseUrl: process.env.VITE_MAXUN_URL || process.env.MAXUN_URL || 'http://localhost:8080',
   apiKey: process.env.MAXUN_API_KEY,
   username: process.env.MAXUN_USERNAME,
   password: process.env.MAXUN_PASSWORD,

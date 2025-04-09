@@ -13,9 +13,11 @@ import { eq, sql, desc, asc } from "drizzle-orm";
 // Interface for all storage operations
 export interface IStorage {
   // User operations
+  getUsers(): Promise<User[]>;
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
   
   // Meeting operations
   getMeetings(): Promise<Meeting[]>;
@@ -95,6 +97,10 @@ export class MemStorage implements IStorage {
   }
 
   // User methods
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+  
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
@@ -107,9 +113,32 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      email: insertUser.email || null,
+      fullName: insertUser.fullName || null,
+      role: insertUser.role || "user",
+      organization: insertUser.organization || null,
+      position: insertUser.position || null,
+      avatarUrl: insertUser.avatarUrl || null,
+      isActive: true,
+      lastLogin: null,
+      createdAt: new Date()
+    };
     this.users.set(id, user);
     return user;
+  }
+  
+  async updateUser(id: number, updatedUserData: Partial<User>): Promise<User | undefined> {
+    const existingUser = this.users.get(id);
+    if (!existingUser) {
+      return undefined;
+    }
+    
+    const updatedUser = { ...existingUser, ...updatedUserData };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
   
   // Meeting methods
@@ -550,6 +579,11 @@ export class MemStorage implements IStorage {
 // Database implementation of the storage interface
 export class DatabaseStorage implements IStorage {
   // User methods
+  async getUsers(): Promise<User[]> {
+    const allUsers = await db.select().from(users as any);
+    return allUsers;
+  }
+  
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
@@ -561,8 +595,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const userData = {
+      ...insertUser,
+      email: insertUser.email || null,
+      fullName: insertUser.fullName || null,
+      role: insertUser.role || "user",
+      organization: insertUser.organization || null,
+      position: insertUser.position || null,
+      avatarUrl: insertUser.avatarUrl || null,
+      isActive: true,
+      lastLogin: null,
+      createdAt: new Date()
+    };
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
+  }
+  
+  async updateUser(id: number, updatedUserData: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set(updatedUserData)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser || undefined;
   }
   
   // Meeting methods

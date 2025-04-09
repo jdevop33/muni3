@@ -7,11 +7,26 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  email: text("email").unique(),
+  fullName: text("full_name"),
+  role: text("role").notNull().default("user"),
+  organization: text("organization"),
+  position: text("position"),
+  avatarUrl: text("avatar_url"),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  email: true,
+  fullName: true,
+  role: true,
+  organization: true,
+  position: true,
+  avatarUrl: true,
 });
 
 export const meetings = pgTable("meetings", {

@@ -1,242 +1,268 @@
 # CouncilInsight Deployment Guide
 
-This guide provides step-by-step instructions for deploying CouncilInsight to various cloud platforms, with a focus on the recommended dual-deployment architecture: Vercel for the web application and Google Cloud Run for the data ingestion service.
+This guide provides comprehensive instructions for deploying CouncilInsight using a dual-cloud architecture with Vercel and Google Cloud Platform.
 
-## Recommended Architecture
+## Architecture Overview
 
-CouncilInsight works best with a dual-deployment approach:
-1. **Web Application:** Deploy to Vercel for optimal frontend performance and serverless functions
-2. **Data Ingestion Service (Maxun):** Deploy to Google Cloud Run for containerized robot execution
-3. **Shared Database:** Neon PostgreSQL database accessible to both services
+CouncilInsight consists of two primary components:
 
-This architecture separates concerns while maintaining data consistency through the shared database.
+1. **Web Application**: A React/Node.js application deployed on Vercel
+2. **Maxun Service**: A web scraping service deployed on Google Cloud Run
 
-## 1. Vercel Deployment (Web Application)
+Both components share a single PostgreSQL database hosted on Neon.tech.
 
-### Prerequisites
-- A Vercel account (https://vercel.com)
-- A Neon Database account (https://neon.tech)
-- Git repository with your CouncilInsight codebase
+## Prerequisites
 
-### Setup Neon Database
+Before deployment, ensure you have:
 
-1. Sign up or log in to Neon (https://neon.tech)
-2. Create a new project
-3. Create a new database named `councilinsight`
-4. Go to the "Connection Details" section and copy your connection string
-   - It should look like: `postgresql://username:password@endpoint/councilinsight`
+- Accounts on:
+  - [Vercel](https://vercel.com)
+  - [Google Cloud Platform](https://cloud.google.com)
+  - [Neon](https://neon.tech) (or another PostgreSQL provider)
+- The following tools installed:
+  - [Node.js](https://nodejs.org) (v18+)
+  - [Git](https://git-scm.com)
+  - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
+- Your codebase in a Git repository (GitHub, GitLab, etc.)
 
-### Deploy to Vercel
+## Step 1: Database Setup
 
-#### Option 1: Using Vercel Dashboard (Recommended for beginners)
+1. Create a PostgreSQL database on Neon.tech:
+   - Sign up/login at [neon.tech](https://neon.tech)
+   - Create a new project called "CouncilInsight"
+   - Create a database called "councilinsight"
+   - Save your connection string: `postgresql://user:password@endpoint:port/councilinsight`
 
-1. Log in to your Vercel account
-2. Click "Add New..." and select "Project"
-3. Import your Git repository containing CouncilInsight
-4. Configure project settings:
+2. Initialize your database schema:
+   ```bash
+   # Set database URL in your environment
+   export DATABASE_URL=your-neon-connection-string
+   
+   # Push schema to database
+   npm run db:push
+   ```
+
+## Step 2: Deploy Web Application to Vercel
+
+### Option 1: Deploy via Vercel Dashboard
+
+1. Push your code to a Git repository
+2. Log in to [Vercel](https://vercel.com)
+3. Click "Add New..." → "Project"
+4. Import your repository
+5. Configure project settings:
    - Framework Preset: Vite
    - Build Command: `npm run build`
    - Output Directory: `dist/public`
-   - Install Command: `npm install`
    - Root Directory: `./` (project root)
-5. Add environment variables:
+6. Add environment variables:
    - `DATABASE_URL`: Your Neon connection string
-   - `VITE_MAXUN_URL`: URL to your Maxun instance (if applicable)
-   - `VITE_MAXUN_API_KEY`: Your Maxun API key (if using API authentication)
-   - Or `VITE_MAXUN_USERNAME` and `VITE_MAXUN_PASSWORD` if using basic authentication
-6. Click "Deploy"
-7. Once deployed, your app will be available at `https://your-project-name.vercel.app`
+   - `VITE_MAXUN_URL`: URL of your Maxun service (add after GCP deployment)
+7. Click "Deploy"
 
-**Note: vercel.json Configuration**
-CouncilInsight includes a `vercel.json` file in the root directory that contains configuration specifically for Vercel deployment, including:
-- URL rewrites to support SPA routing
-- Build configuration optimized for Vite apps
-
-**Note about Environment Variables:**
-- All client-side environment variables must be prefixed with `VITE_` to be accessible in the browser.
-- For backend environment variables (like `DATABASE_URL`), use normal naming conventions.
-- Vercel automatically exposes system environment variables like `VERCEL_ENV`.
-
-#### Option 2: Using Vercel CLI
+### Option 2: Deploy via Vercel CLI
 
 1. Install Vercel CLI:
    ```bash
    npm install -g vercel
    ```
 
-2. Navigate to your project directory and run:
+2. Log in to Vercel:
    ```bash
-   vercel
+   vercel login
    ```
 
-3. Follow the CLI prompts to connect to your Vercel account and configure the project
-4. When asked about environment variables, add the same ones mentioned in Option 1
-5. For subsequent deployments, use:
+3. Deploy from your project directory:
    ```bash
    vercel --prod
    ```
 
-### Connect Neon and Vercel (Optional but recommended)
+4. When prompted, enter your environment variables
 
-For even tighter integration:
+## Step 3: Deploy Maxun Service to Google Cloud Run
 
-1. In your Neon dashboard, go to the "Integrations" tab
-2. Select Vercel integration
-3. Connect to your Vercel account and select your project
-4. This will automatically set up the `DATABASE_URL` in your Vercel project
-
-### Initial Database Setup
-
-After deployment, you'll need to initialize your database:
-
-1. Go to your Vercel project dashboard
-2. Navigate to "Settings" > "Functions" > "Console"
-3. Run the database push command:
+1. Configure GCP Project:
    ```bash
-   npm run db:push
+   # Install Google Cloud SDK if you haven't already
+   # https://cloud.google.com/sdk/docs/install
+   
+   # Initialize GCP and create project
+   gcloud init
+   gcloud projects create councilinsight-prod
+   gcloud config set project councilinsight-prod
+   
+   # Enable required APIs
+   gcloud services enable cloudbuild.googleapis.com run.googleapis.com \
+     artifactregistry.googleapis.com cloudscheduler.googleapis.com
    ```
 
-## 2. Google Cloud Run Deployment (Maxun Data Ingestion Service)
-
-For the data ingestion service, we use Google Cloud Run which is ideal for containerized applications.
-
-### Prerequisites
-- Google Cloud CLI installed and configured
-- Docker installed locally for building containers
-- A Google Cloud project with billing enabled
-- Cloud Run API enabled in your Google Cloud project
-
-### Deployment Steps for Maxun Container
-
-1. Inside the root directory, navigate to the Maxun directory:
+2. Use the deployment script:
    ```bash
+   # Ensure you're in the project root
+   cd /path/to/councilinsight
+   
+   # Set your database URL
+   export DATABASE_URL=your-neon-connection-string
+   
+   # Make the script executable (if needed)
+   chmod +x maxun/deploy-gcp.sh
+   
+   # Run the deployment script
    cd maxun
+   ./deploy-gcp.sh
    ```
 
-2. Build the Maxun Docker image:
+3. The script will:
+   - Create a Docker repository in Artifact Registry
+   - Build and push the Docker image
+   - Deploy the service to Cloud Run
+   - Optionally create a scheduled job for the Oak Bay council scraper
+
+4. After deployment, note the service URL provided by the script.
+
+## Step 4: Connect the Components
+
+1. Return to your Vercel project settings
+2. Add/update the `VITE_MAXUN_URL` environment variable with your Cloud Run service URL
+3. Trigger a redeployment on Vercel
+
+## Step 5: Verify Deployment
+
+1. Visit your Vercel app URL
+2. Navigate to the Data Ingestion page
+3. Verify connection to the Maxun service by checking if robots are listed
+4. Test running a robot and check if data appears in the app
+
+## Advanced Configuration
+
+### Secure Cloud Run with Authentication
+
+By default, the deploy script makes the Maxun service publicly accessible. To restrict access:
+
+1. Update the service to require authentication:
    ```bash
-   docker build -t gcr.io/[YOUR_PROJECT_ID]/maxun-service .
+   gcloud run services update maxun-service \
+     --no-allow-unauthenticated
    ```
 
-3. Push the image to Google Container Registry:
+2. Create a service account for Vercel to access Cloud Run:
    ```bash
-   docker push gcr.io/[YOUR_PROJECT_ID]/maxun-service
+   # Create service account
+   gcloud iam service-accounts create vercel-maxun-access
+   
+   # Grant necessary permissions
+   gcloud run services add-iam-policy-binding maxun-service \
+     --member="serviceAccount:vercel-maxun-access@councilinsight-prod.iam.gserviceaccount.com" \
+     --role="roles/run.invoker"
+   
+   # Create a key
+   gcloud iam service-accounts keys create vercel-maxun-key.json \
+     --iam-account=vercel-maxun-access@councilinsight-prod.iam.gserviceaccount.com
    ```
 
-4. Deploy the container to Cloud Run:
+3. Add the service account key to Vercel environment variables
+
+### Enable Google Vertex AI Integration (Optional)
+
+To leverage Google's AI capabilities for meeting analysis:
+
+1. Enable the Vertex AI API:
    ```bash
-   gcloud run deploy maxun-service \
-     --image gcr.io/[YOUR_PROJECT_ID]/maxun-service \
-     --platform managed \
-     --region us-central1 \
-     --allow-unauthenticated \
-     --set-env-vars="DATABASE_URL=[YOUR_NEON_DB_URL],MAXUN_API_KEY=[YOUR_API_KEY]"
+   gcloud services enable aiplatform.googleapis.com
    ```
 
-5. Configure scheduled jobs (recommended for production):
+2. Update your Maxun service with Vertex AI integration code (see server.js for details)
+
+3. Redeploy the Maxun service
+
+### Configure Custom Domain
+
+#### For Vercel:
+1. Go to your project settings in Vercel dashboard
+2. Navigate to "Domains"
+3. Add your custom domain and follow verification steps
+
+#### For Cloud Run:
+1. Add a custom domain mapping:
    ```bash
-   gcloud scheduler jobs create http maxun-daily-scrape \
-     --schedule="0 2 * * *" \
-     --uri="https://maxun-service-[HASH].run.app/api/maxun/sync" \
-     --http-method=POST
+   gcloud beta run domain-mappings create \
+     --service maxun-service \
+     --domain api.councilinsight.com
    ```
 
-### Connecting Web App to Maxun Service
-
-Once deployed, update your Vercel environment variables:
-- `VITE_MAXUN_URL`: Set to the URL of your deployed Cloud Run service (e.g., `https://maxun-service-[HASH].run.app`)
-- `VITE_MAXUN_API_KEY`: Your Maxun API key for authentication
-
-This architecture allows:
-- Scheduled data collection through Cloud Run
-- On-demand data collection triggered from the web application
-- Consistent data access through the shared Neon database
-
-## 3. AWS Elastic Beanstalk Deployment
-
-For AWS users, Elastic Beanstalk provides a simple way to deploy the application.
-
-### Prerequisites
-- AWS account
-- AWS CLI installed and configured
-- EB CLI installed
-
-### Deployment Steps
-
-1. Initialize the EB CLI in your project directory:
-   ```bash
-   eb init
-   ```
-
-2. Create a new environment:
-   ```bash
-   eb create councilinsight-production
-   ```
-
-3. Set environment variables:
-   ```bash
-   eb setenv DATABASE_URL=your-postgresql-connection-string MAXUN_URL=your-maxun-url MAXUN_API_KEY=your-maxun-api-key
-   ```
-
-4. Deploy the application:
-   ```bash
-   eb deploy
-   ```
-
-## 4. Custom Server Deployment with Docker
-
-For deployment to any server with Docker support:
-
-1. Make sure Docker and Docker Compose are installed on your server
-2. Clone your repository to the server
-3. Create a `.env` file with all required environment variables
-4. Start the application with Docker Compose:
-   ```bash
-   docker-compose up -d
-   ```
+2. Update DNS records as instructed by Google Cloud
 
 ## Troubleshooting
 
 ### Database Connection Issues
-- Verify that your DATABASE_URL is correct and accessible from the deployment platform
-- For Neon DB, ensure that your IP address is allowed in the connection pooling settings
-- Check that the required database extensions are enabled
+- Verify your DATABASE_URL is correct and accessible from both services
+- Check firewall settings in Neon dashboard
+- Ensure you're using connection pooling for better performance
 
-### Application Errors
-- Review the deployment logs in your platform's dashboard
-- Check application logs using the platform's logging interface
-- For Vercel, use the "Functions" > "Logs" section in your project dashboard
+### Maxun Service Not Running
+- Check Cloud Run logs: `gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=maxun-service"`
+- Verify Docker build: Build locally with `docker build -t maxun-service maxun/`
+- Check if database migration was successful
 
-### Maxun Integration Issues
-- Verify that your Maxun instance is accessible from the internet
-- Check that your API key or credentials are correctly set up
-- Try running a test robot from the Data Ingestion page after deployment
-- Ensure your Cloud Run service has the necessary permissions to access the database
+### Web Application Not Loading
+- Check Vercel deployment logs in dashboard
+- Verify environment variables are set correctly
+- Test API endpoints manually using curl
 
-### Dual-Deployment Architecture Issues
-- **Cross-Origin Issues:** If you experience CORS errors, ensure your Cloud Run service has the appropriate headers:
-  ```
-  Access-Control-Allow-Origin: https://your-vercel-app.vercel.app
-  Access-Control-Allow-Methods: GET, POST, OPTIONS
-  Access-Control-Allow-Headers: Content-Type, Authorization
-  ```
-- **Synchronization Issues:** If data isn't appearing in the web app after ingestion:
-  1. Check database permissions for both services
-  2. Verify that both services are using the same database schema version
-  3. Check Cloud Run logs for any errors during data processing
-- **Authentication Issues:** Ensure your Maxun API key is correctly set in both environments
+## Maintenance and Updates
 
-## Maintenance
+### Updating the Web Application
+1. Push changes to your Git repository
+2. Vercel will automatically redeploy
+
+### Updating the Maxun Service
+1. Make changes to the Maxun code
+2. Run the deployment script again:
+   ```bash
+   cd maxun
+   ./deploy-gcp.sh
+   ```
 
 ### Database Migrations
-CouncilInsight uses Drizzle ORM which handles schema migrations automatically. To update your database schema:
+When changing the database schema:
+1. Update your schema in `shared/schema.ts`
+2. Run `npm run db:push` to update the database
+3. Redeploy both services to ensure compatibility
 
-1. Make changes to your schema in `shared/schema.ts`
-2. Run `npm run db:push` to apply the changes to your database
+## Monitoring
 
-### Updating the Application
-For updates:
+### Vercel Analytics
+Enable Vercel Analytics in your project settings for web application monitoring.
 
-1. Push your changes to your Git repository
-2. If using Vercel with GitHub integration, changes will be deployed automatically
-3. Otherwise, run the appropriate deployment command for your platform
+### Google Cloud Monitoring
+Set up Cloud Monitoring for the Maxun service:
+```bash
+# Create an uptime check
+gcloud monitoring uptime-check create http maxun-service-uptime \
+  --display-name="Maxun Service Uptime" \
+  --http-path="/health" \
+  --period=300 \
+  --timeout=30s \
+  --uri="https://your-maxun-service-url.run.app"
+```
+
+## Cost Optimization
+
+- Vercel: Use the Hobby plan for personal projects, Pro plan for professional use
+- Google Cloud Run: Set appropriate min/max instances (0/10 recommended for cost-efficiency)
+- Neon: Start with the free tier, upgrade as needed based on usage
+
+## Security Best Practices
+
+- Keep all API keys and credentials secure
+- Regularly update dependencies
+- Enable HTTPS for all endpoints
+- Consider implementing rate limiting
+- Use the principle of least privilege for service accounts
+
+---
+
+For additional support, refer to:
+- [Vercel Documentation](https://vercel.com/docs)
+- [Google Cloud Run Documentation](https://cloud.google.com/run/docs)
+- [Neon Documentation](https://neon.tech/docs)

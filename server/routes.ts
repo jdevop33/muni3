@@ -3,8 +3,12 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { router as maxunRouter } from "./maxun-client";
 import { log } from "./vite";
+import { setupAuth, roleCheck } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  setupAuth(app);
+  
   // Mount the Maxun API router
   app.use('/api/maxun', maxunRouter);
   // API Routes
@@ -220,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Filter meetings that have this topic
       const relatedMeetings = meetings.filter(meeting => 
-        meeting.topics.some(topic => topic.toLowerCase() === topicName.toLowerCase())
+        meeting.topics && meeting.topics.some(topic => topic.toLowerCase() === topicName.toLowerCase())
       );
       
       res.json(relatedMeetings);
@@ -257,8 +261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Direct data upload routes
-  app.post('/api/meetings/upload', async (req: Request, res: Response) => {
+  // Direct data upload routes - protected for staff/admin
+  app.post('/api/meetings/upload', roleCheck(['admin', 'staff']), async (req: Request, res: Response) => {
     try {
       const { data } = req.body;
       
@@ -294,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/decisions/upload', async (req: Request, res: Response) => {
+  app.post('/api/decisions/upload', roleCheck(['admin', 'staff']), async (req: Request, res: Response) => {
     try {
       const { data } = req.body;
       
@@ -330,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/topics/upload', async (req: Request, res: Response) => {
+  app.post('/api/topics/upload', roleCheck(['admin', 'staff']), async (req: Request, res: Response) => {
     try {
       const { data } = req.body;
       
@@ -361,8 +365,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Documentation upload route
-  app.post('/api/documents/upload', async (req: Request, res: Response) => {
+  // Documentation upload route - protected for staff/admin
+  app.post('/api/documents/upload', roleCheck(['admin', 'staff']), async (req: Request, res: Response) => {
     try {
       const { documentType, meetingId, content, title } = req.body;
       
@@ -382,6 +386,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to process document upload:', error);
       res.status(500).json({ error: 'Failed to process document upload' });
+    }
+  });
+
+  // User management routes (admin only)
+  app.get('/api/users', roleCheck(['admin']), async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getUsers();
+      
+      // Remove sensitive info (passwords) from response
+      const sanitizedUsers = users.map(user => {
+        const userWithoutPassword = { ...user } as any;
+        if (userWithoutPassword.password) {
+          delete userWithoutPassword.password;
+        }
+        return userWithoutPassword;
+      });
+      
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  });
+  
+  app.patch('/api/users/:id', roleCheck(['admin']), async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const userData = req.body;
+      
+      // Prevent password updates through this endpoint
+      if (userData.password) {
+        delete (userData as any).password;
+      }
+      
+      const updatedUser = await storage.updateUser(userId, userData);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Remove password from response
+      const userWithoutPassword: any = { ...updatedUser };
+      if (userWithoutPassword.password) {
+        delete userWithoutPassword.password;
+      }
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error(`Failed to update user ${req.params.id}:`, error);
+      res.status(500).json({ error: `Failed to update user ${req.params.id}` });
     }
   });
 
