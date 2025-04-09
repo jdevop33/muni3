@@ -131,13 +131,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             ))}
           </nav>
           
-          <div className="mt-auto border-t border-gray-200 p-4">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-sm font-medium">Need help?</div>
-              <p className="text-xs text-gray-500 mt-1">Check out our user guide or contact support.</p>
-              <a href="#" className="mt-2 text-xs font-medium text-[#0056a6] hover:text-[#004e95] flex items-center">
-                Learn more <ChevronRight className="ml-1 h-3 w-3" />
-              </a>
+          <div className="mt-auto pt-4">
+            <div className="px-4 mb-3">
+              <div className="font-heading font-semibold text-[#0056a6] text-sm leading-tight">CouncilInsight</div>
+              <div className="text-xs text-gray-500">Meeting Intelligence Platform</div>
+            </div>
+            
+            <div className="border-t border-gray-200 p-4">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="text-sm font-medium">Need help?</div>
+                <p className="text-xs text-gray-500 mt-1">Check out our user guide or contact support.</p>
+                <a href="#" className="mt-2 text-xs font-medium text-[#0056a6] hover:text-[#004e95] flex items-center">
+                  Learn more <ChevronRight className="ml-1 h-3 w-3" />
+                </a>
+              </div>
             </div>
           </div>
         </div>

@@ -82,15 +82,9 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-2 md:px-4">
         <div className="flex items-center h-16">
-          {/* Logo - Positioned further left and simplified on mobile */}
-          <Link href="/" className="flex items-center">
-            <img src={obLogo} alt="Oak Bay Logo" className="h-9 md:h-10 mr-2 md:mr-3" />
-            <div className="hidden sm:block border-l border-gray-300 h-8 mx-1"></div>
-            <div className="hidden sm:block">
-              <div className="font-heading font-semibold text-[#0056a6] leading-tight">CouncilInsight</div>
-              <div className="text-xs text-gray-500">Meeting Intelligence Platform</div>
-            </div>
-            <div className="sm:hidden font-heading font-semibold text-[#0056a6] text-sm">CouncilInsight</div>
+          {/* Logo only - Clean and minimal */}
+          <Link href="/" className="flex items-center pl-0">
+            <img src={obLogo} alt="Oak Bay Logo" className="h-9 md:h-10" />
           </Link>
           
           {/* Desktop Search bar - with adjusted margins */}
