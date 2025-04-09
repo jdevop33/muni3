@@ -48,7 +48,44 @@ docker-compose logs -f
 
 ### Cloud Deployment
 
-We provide a deployment script for Google Cloud Run:
+#### Vercel Deployment (Recommended)
+
+CouncilInsight is optimized for deployment on Vercel with NeonDB integration:
+
+1. Create a Vercel account at https://vercel.com
+2. Install the Vercel CLI: `npm install -g vercel`
+3. Initialize a Git repository (if not already done):
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   ```
+4. Deploy to Vercel:
+   ```bash
+   vercel
+   ```
+5. When prompted, connect to your Vercel account and configure the project.
+6. Set up the following environment variables in the Vercel dashboard:
+   - `DATABASE_URL` - Your Neon PostgreSQL connection string
+   - `MAXUN_URL` - URL to your Maxun instance
+   - `MAXUN_API_KEY` - Your Maxun API key (if using API authentication)
+   - `MAXUN_USERNAME` and `MAXUN_PASSWORD` - Your Maxun credentials (if using basic authentication)
+
+7. For Neon DB integration, make sure to:
+   - Create a Neon DB account at https://neon.tech
+   - Create a new project and database
+   - Get your connection string from the Neon dashboard
+   - Add the connection string as `DATABASE_URL` environment variable in Vercel
+   - Enable Vercel integration from your Neon dashboard for even easier setup
+
+8. For subsequent deployments, simply run:
+   ```bash
+   vercel --prod
+   ```
+
+#### Google Cloud Run Alternative
+
+We also provide a deployment script for Google Cloud Run:
 
 ```bash
 # Build the Docker image
