@@ -9,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import Meetings from "@/pages/meetings";
 import Topics from "@/pages/topics";
 import Decisions from "@/pages/decisions";
+import DataIngestion from "@/pages/data-ingestion";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,6 +34,7 @@ function Router() {
             <Route path="/meetings" component={Meetings} />
             <Route path="/topics" component={Topics} />
             <Route path="/decisions" component={Decisions} />
+            <Route path="/data-ingestion" component={DataIngestion} />
             {/* Fallback to 404 */}
             <Route component={NotFound} />
           </Switch>

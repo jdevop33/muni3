@@ -1,8 +1,12 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { router as maxunRouter } from "./maxun-client";
+import { log } from "./vite";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Mount the Maxun API router
+  app.use('/api/maxun', maxunRouter);
   // API Routes
   // Dashboard stats
   app.get('/api/dashboard/stats', async (req: Request, res: Response) => {

@@ -1,0 +1,40 @@
+{
+  "name": "maxun-core",
+  "version": "0.0.14",
+  "description": "Core package for Maxun, responsible for data extraction",
+  "main": "build/index.js",
+  "typings": "build/index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "build": "npm run clean && tsc",
+    "lint": "eslint .",
+    "clean": "rimraf ./build"
+  },
+  "files": [
+    "build/*"
+  ],
+  "keywords": [
+    "maxun",
+    "no-code scraping",
+    "web",
+    "automation",
+    "workflow",
+    "data extraction",
+    "scraping",
+    "web scraper",
+    "web scraping",
+    "data scraping",
+    "no-code web scraper",
+    "no-code web scraping"
+  ],
+  "author": "Maxun",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@cliqz/adblocker-playwright": "^1.31.3",
+    "cross-fetch": "^4.0.0",
+    "joi": "^17.6.0",
+    "playwright": "^1.20.1",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}

@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # CouncilInsight Application
+  councilinsight-app:
+    build:
+      context: .
+    image: councilinsight-app:latest
+    container_name: councilinsight-app
+    ports:
+      - "8000:8080"  # Expose the app on host port 8000
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@councilinsight-db:5432/councilinsight}
+      MAXUN_URL: http://maxun-backend:8080
+      MAXUN_API_KEY: ${MAXUN_API_KEY:-}  # Use API key from env if provided
+      MAXUN_USERNAME: ${MAXUN_USERNAME:-admin@example.com}
+      MAXUN_PASSWORD: ${MAXUN_PASSWORD:-admin}
+    depends_on:
+      - councilinsight-db
+      - maxun-backend
+    restart: unless-stopped
+    networks:
+      - councilinsight-network
+
+  # CouncilInsight Database
+  councilinsight-db:
+    image: postgres:14-alpine
+    container_name: councilinsight-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: councilinsight
+    ports:
+      - "5432:5432"
+    volumes:
+      - councilinsight_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - councilinsight-network
+
+  # Maxun Services
+  maxun-postgres:
+    image: postgres:13
+    container_name: maxun-postgres
+    environment:
+      POSTGRES_USER: maxun
+      POSTGRES_PASSWORD: maxun_password
+      POSTGRES_DB: maxun
+    ports:
+      - "5433:5432"  # Using different port to avoid conflict with our app's PostgreSQL
+    volumes:
+      - maxun_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maxun"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - councilinsight-network
+
+  maxun-redis:
+    image: redis:6
+    container_name: maxun-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - maxun_redis_data:/data
+    networks:
+      - councilinsight-network
+
+  maxun-minio:
+    image: minio/minio
+    container_name: maxun-minio
+    environment:
+      MINIO_ROOT_USER: minio_access_key
+      MINIO_ROOT_PASSWORD: minio_secret_key
+    command: server /data --console-address :9001
+    ports:
+      - "9000:9000"  # API port
+      - "9001:9001"  # WebUI port
+    volumes:
+      - maxun_minio_data:/data
+    networks:
+      - councilinsight-network
+
+  maxun-backend:
+    image: getmaxun/maxun-backend:latest
+    container_name: maxun-backend
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: production
+      JWT_SECRET: a9Z$kLq7^f03GzNw!bP9dH4xV6sT2yXl3O8vR@uYq3
+      DB_NAME: maxun
+      DB_USER: maxun
+      DB_PASSWORD: maxun_password
+      DB_HOST: maxun-postgres
+      DB_PORT: 5432
+      ENCRYPTION_KEY: f4d5e6a7b8c9d0e1f23456789abcdef01234567890abcdef123456789abcdef0
+      MINIO_ENDPOINT: maxun-minio
+      MINIO_PORT: 9000
+      MINIO_CONSOLE_PORT: 9001
+      MINIO_ACCESS_KEY: minio_access_key
+      MINIO_SECRET_KEY: minio_secret_key
+      REDIS_HOST: maxun-redis
+      REDIS_PORT: 6379
+      BACKEND_PORT: 8080
+      FRONTEND_PORT: 5173
+      BACKEND_URL: http://maxun-backend:8080
+      PUBLIC_URL: http://maxun-frontend:5173
+      VITE_BACKEND_URL: http://maxun-backend:8080
+      VITE_PUBLIC_URL: http://maxun-frontend:5173
+      # to ensure Playwright works in Docker
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 0
+      CHROMIUM_FLAGS: '--disable-gpu --no-sandbox --headless=new'
+    security_opt:
+      - seccomp=unconfined  # This might help with browser sandbox issues
+    shm_size: '2gb' # Increase shared memory size for Chromium
+    depends_on:
+      - maxun-postgres
+      - maxun-redis
+      - maxun-minio
+    volumes:
+      - /var/run/dbus:/var/run/dbus
+    networks:
+      - councilinsight-network
+
+  maxun-frontend:
+    image: getmaxun/maxun-frontend:latest
+    container_name: maxun-frontend
+    ports:
+      - "5174:5173"  # Using different port to avoid conflict with our app's Vite
+    environment:
+      PUBLIC_URL: http://localhost:5174
+      BACKEND_URL: http://maxun-backend:8080
+    depends_on:
+      - maxun-backend
+    networks:
+      - councilinsight-network
+
+networks:
+  councilinsight-network:
+    driver: bridge
+
+volumes:
+  councilinsight_db_data:
+  maxun_postgres_data:
+  maxun_minio_data:
+  maxun_redis_data:

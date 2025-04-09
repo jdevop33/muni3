@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ];
 
   const toolItems = [
+    { label: 'Data Ingestion', icon: 'fa-database', path: '/data-ingestion' },
     { label: 'My Alerts', icon: 'fa-bell', path: '/alerts' },
     { label: 'Saved Items', icon: 'fa-bookmark', path: '/saved' },
     { label: 'Settings', icon: 'fa-cog', path: '/settings' },
