@@ -1,16 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Mic, Menu, User, Settings, LogOut, CheckCircle, Calendar, AlertCircle } from 'lucide-react';
-import { Link } from 'wouter';
+import { Search, Bell, Mic, Menu, User, Settings, LogOut, CheckCircle, Calendar, AlertCircle, LogIn } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
+import { useAuth } from '@/hooks/use-auth';
+import obLogo from '@assets/OB-logo.png';
 
-interface HeaderProps {
-  user?: {
-    name: string;
-    role: string;
-    initials: string;
-  };
-}
+// Helper function to get initials from a name
+const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
 
-const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'City Clerk', initials: 'JS' } }) => {
+interface HeaderProps {}
+
+const Header: React.FC<HeaderProps> = () => {
+  const { user, logoutMutation } = useAuth();
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -67,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
         <div className="flex items-center justify-between h-16">
           {/* Logo and site name */}
           <Link href="/" className="flex items-center space-x-3">
-            <img src="/OB-logo.png" alt="Oak Bay Logo" className="h-10" />
+            <img src={obLogo} alt="Oak Bay Logo" className="h-10" />
             <div className="border-l border-gray-300 h-8 mx-1"></div>
             <div>
               <div className="font-heading font-semibold text-[#0056a6] leading-tight">CouncilInsight</div>
@@ -159,54 +167,87 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
               )}
             </div>
             
-            {/* User Profile */}
+            {/* User Profile or Login Button */}
             <div className="flex items-center relative" ref={userMenuRef}>
-              <button 
-                onClick={() => {
-                  setUserMenuOpen(!userMenuOpen);
-                  setNotificationsOpen(false);
-                }}
-                className="flex items-center focus:outline-none"
-              >
-                <div className="hidden md:block mr-3">
-                  <div className="text-sm font-medium">{user.name}</div>
-                  <div className="text-xs text-gray-500">{user.role}</div>
-                </div>
-                <div className="h-8 w-8 rounded-full bg-[#cce3f3] text-[#0056a6] font-medium flex items-center justify-center">
-                  {user.initials}
-                </div>
-              </button>
-              
-              {/* User Menu Dropdown */}
-              {userMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
-                  <div className="p-3 border-b border-gray-100">
-                    <div className="font-medium text-gray-800">{user.name}</div>
-                    <div className="text-xs text-gray-500">{user.role}</div>
-                  </div>
-                  <div>
-                    <Link 
-                      href="/settings" 
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <User className="h-4 w-4 mr-3 text-gray-500" />
-                      Profile
-                    </Link>
-                    <Link 
-                      href="/settings" 
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Settings className="h-4 w-4 mr-3 text-gray-500" />
-                      Settings
-                    </Link>
-                    <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-100">
-                      <LogOut className="h-4 w-4 mr-3 text-gray-500" />
-                      Sign out
-                    </button>
-                  </div>
-                </div>
+              {user ? (
+                /* Logged in state */
+                <>
+                  <button 
+                    onClick={() => {
+                      setUserMenuOpen(!userMenuOpen);
+                      setNotificationsOpen(false);
+                    }}
+                    className="flex items-center focus:outline-none"
+                  >
+                    <div className="hidden md:block mr-3">
+                      <div className="text-sm font-medium">{user.fullName || user.username}</div>
+                      <div className="text-xs text-gray-500">{user.role}</div>
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-[#cce3f3] text-[#0056a6] font-medium flex items-center justify-center">
+                      {getInitials(user.fullName || user.username)}
+                    </div>
+                  </button>
+                  
+                  {/* User Menu Dropdown */}
+                  {userMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                      <div className="p-3 border-b border-gray-100">
+                        <div className="font-medium text-gray-800">{user.fullName || user.username}</div>
+                        <div className="text-xs text-gray-500">{user.email || ''}</div>
+                        <div className="text-xs text-gray-500 mt-1 uppercase font-bold">
+                          {user.role}
+                        </div>
+                      </div>
+                      <div>
+                        <Link 
+                          href="/settings" 
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <User className="h-4 w-4 mr-3 text-gray-500" />
+                          Profile
+                        </Link>
+                        <Link 
+                          href="/settings" 
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                          Settings
+                        </Link>
+                        {user.role === 'admin' && (
+                          <Link 
+                            href="/data-ingestion" 
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                            Data Management
+                          </Link>
+                        )}
+                        <button 
+                          className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-100"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            logoutMutation.mutate();
+                          }}
+                        >
+                          <LogOut className="h-4 w-4 mr-3 text-gray-500" />
+                          Sign out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Logged out state */
+                <button 
+                  onClick={() => navigate('/auth')}
+                  className="flex items-center space-x-2 px-3 py-1.5 bg-[#0056a6] text-white rounded-md hover:bg-[#004e95] transition duration-150"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span className="text-sm font-medium">Sign In</span>
+                </button>
               )}
             </div>
             
