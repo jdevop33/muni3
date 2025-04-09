@@ -1,139 +1,359 @@
-# CouncilInsight for Oak Bay
+# CouncilInsight Documentation
 
-CouncilInsight is a next-generation council meeting intelligence platform for Oak Bay that makes municipal meetings searchable, accessible, and connected to community projects.
+CouncilInsight is a council meeting intelligence platform designed to enhance municipal transparency and community engagement for Oak Bay. This document provides comprehensive information about the application architecture, features, and development guidelines.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Data Models](#data-models)
+- [API Reference](#api-reference)
+- [Environment Variables](#environment-variables)
+- [Maxun Integration](#maxun-integration)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+
+## Overview
+
+CouncilInsight transforms how municipal council meetings are accessed and analyzed, focusing on both city managers' and community members' needs. The platform makes council meetings searchable and accessible, providing insights into discussions, decisions, and topics to improve transparency in municipal governance.
 
 ## Features
 
-- **Meeting Intelligence**: Search and access council meeting records, transcripts, and decisions.
-- **Decision Tracking**: Follow the progress of council decisions and their implementation.
-- **Topic Analysis**: Explore topics discussed across multiple meetings.
-- **Data Integration**: Automated ingestion of meeting data from the Oak Bay municipal website.
+### Dashboard
+- Meeting statistics and key metrics
+- Recent and upcoming meetings overview
+- Decision tracking and analytics
+- Topic trend analysis
+
+### Meeting Management
+- Comprehensive meeting information
+- Video and transcript integration
+- Key discussion highlights
+- Searchable meeting content
+
+### Decision Tracking
+- Decision history with voting records
+- Status tracking and implementation monitoring
+- Related topics and neighborhood impacts
+
+### Topic Analysis
+- Topic categorization and tracking
+- Trend analysis over time
+- Cross-meeting topic relationships
+
+### Neighborhood Focus
+- Geographic impact visualization
+- Neighborhood-specific decision tracking
+- Community-focused insights
+
+### Data Ingestion
+- Maxun integration for web scraping
+- Direct document upload capabilities
+- CSV data import functionality
 
 ## Architecture
 
-CouncilInsight consists of two main components:
+CouncilInsight implements a dual-deployment architecture:
 
-1. **CouncilInsight Web Application**: A full-stack web application built with Node.js, React, and PostgreSQL.
-2. **Maxun Integration**: A data extraction engine that scrapes and processes data from the Oak Bay municipal website.
+1. **Web Application (Frontend + API)**: Deployed on Vercel
+   - React-based frontend with TanStack Query
+   - Express.js backend with RESTful APIs
+   - Serverless functions for extended functionality
 
-## Setup & Deployment
+2. **Data Ingestion Service**: Deployed on Google Cloud Run
+   - Containerized Maxun robots for web scraping
+   - Scheduled data collection jobs
+   - Direct database writing capabilities
+
+3. **Shared Database**: Neon PostgreSQL
+   - Accessible to both services
+   - Managed through Drizzle ORM
+   - Serverless PostgreSQL for scalability
+
+## Tech Stack
+
+### Frontend
+- React 18
+- TypeScript
+- TanStack Query for data fetching
+- Tailwind CSS for styling
+- Shadcn UI components
+- Lucide React icons
+- Wouter for routing
+
+### Backend
+- Express.js
+- Drizzle ORM
+- PostgreSQL (Neon)
+- Node.js
+
+### Data Ingestion
+- Maxun (dockerized web scraping)
+- Express.js APIs for triggering data collection
+- CSV parsing utilities
+
+### Deployment
+- Vercel for web application
+- Google Cloud Run for data ingestion service
+- Neon for PostgreSQL database
+
+## Getting Started
 
 ### Prerequisites
+- Node.js 18 or higher
+- npm or yarn
+- Docker (for Maxun development)
+- PostgreSQL database (Neon recommended)
 
-- Docker and Docker Compose
-- Node.js v20+ (for local development)
-- PostgreSQL (automatically provisioned in Docker Compose)
+### Installation
 
-### Local Development
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-org/councilinsight.git
+   cd councilinsight
+   ```
 
-1. Clone the repository
-2. Copy `.env.example` to `.env` and configure your environment variables
-3. Install dependencies: `npm install`
-4. Start the development server: `npm run dev`
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-### Docker Deployment
+3. Create a `.env` file in the root directory:
+   ```
+   DATABASE_URL=postgresql://username:password@hostname:port/councilinsight
+   
+   # For Maxun integration (if used)
+   VITE_MAXUN_URL=http://your-maxun-instance:8080
+   VITE_MAXUN_API_KEY=your-maxun-api-key
+   ```
 
-The entire application stack can be run using Docker Compose:
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-```bash
-# Start all services
-docker-compose up -d
+### Docker Setup (Maxun)
 
-# Stop all services
-docker-compose down
+For development with the Maxun scraping component:
 
-# View logs
-docker-compose logs -f
+1. Navigate to the Maxun directory:
+   ```bash
+   cd maxun
+   ```
+
+2. Build the Docker image:
+   ```bash
+   docker build -t maxun-local .
+   ```
+
+3. Run the container:
+   ```bash
+   docker run -p 8080:8080 -e DATABASE_URL=your-db-url maxun-local
+   ```
+
+## Project Structure
+
+```
+councilinsight/
+├── client/               # Frontend code
+│   ├── src/
+│   │   ├── components/   # Reusable UI components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── lib/          # Utility functions
+│   │   ├── pages/        # Application pages
+│   │   └── App.tsx       # Main application component
+├── server/               # Backend code
+│   ├── routes.ts         # API routes
+│   ├── storage.ts        # Data storage interface
+│   ├── db.ts             # Database connection
+│   ├── maxun-client.ts   # Maxun API client
+│   └── index.ts          # Server entry point
+├── shared/               # Shared code between client and server
+│   └── schema.ts         # Database schema definitions
+├── maxun/                # Maxun scraping service
+│   ├── robots/           # Scraping robot definitions
+│   ├── Dockerfile        # Docker configuration
+│   └── server.js         # Maxun server code
+├── public/               # Static assets
+└── drizzle/              # Drizzle migration files
 ```
 
-### Cloud Deployment
+## Data Models
 
-#### Vercel Deployment (Recommended)
+CouncilInsight uses several core data models to organize information:
 
-CouncilInsight is optimized for deployment on Vercel with NeonDB integration:
+### User
+Represents application users with different permission levels.
 
-1. Create a Vercel account at https://vercel.com
-2. Install the Vercel CLI: `npm install -g vercel`
-3. Initialize a Git repository (if not already done):
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   ```
-4. Deploy to Vercel:
-   ```bash
-   vercel
-   ```
-5. When prompted, connect to your Vercel account and configure the project.
-6. Set up the following environment variables in the Vercel dashboard:
-   - `DATABASE_URL` - Your Neon PostgreSQL connection string
-   - `MAXUN_URL` - URL to your Maxun instance
-   - `MAXUN_API_KEY` - Your Maxun API key (if using API authentication)
-   - `MAXUN_USERNAME` and `MAXUN_PASSWORD` - Your Maxun credentials (if using basic authentication)
+### Meeting
+Represents council meetings with metadata like date, type, status, etc.
 
-7. For Neon DB integration, make sure to:
-   - Create a Neon DB account at https://neon.tech
-   - Create a new project and database
-   - Get your connection string from the Neon dashboard
-   - Add the connection string as `DATABASE_URL` environment variable in Vercel
-   - Enable Vercel integration from your Neon dashboard for even easier setup
+### Decision
+Tracks decisions made during council meetings, including voting records.
 
-8. For subsequent deployments, simply run:
-   ```bash
-   vercel --prod
-   ```
+### Topic
+Represents topics discussed across meetings.
 
-#### Google Cloud Run Alternative
+### Neighborhood
+Geographic areas referenced in discussions and decisions.
 
-We also provide a deployment script for Google Cloud Run:
+### MeetingDiscussion
+Captures specific discussions within meetings.
 
-```bash
-# Build the Docker image
-./deploy.sh build
+### MeetingKeyMoment
+Highlights important moments in meeting proceedings.
 
-# Push to Google Container Registry
-./deploy.sh push
+For detailed schema information, refer to `shared/schema.ts`.
 
-# Deploy to Cloud Run
-./deploy.sh deploy
+## API Reference
 
-# Or do all steps at once
-./deploy.sh all
-```
+CouncilInsight exposes a RESTful API for interacting with the application data. All API endpoints are prefixed with `/api`.
+
+### Dashboard Endpoints
+- `GET /api/dashboard/stats`: Get dashboard statistics
+
+### Meeting Endpoints
+- `GET /api/meetings`: Get all meetings
+- `GET /api/meetings/recent`: Get recent meetings
+- `GET /api/meetings/upcoming`: Get upcoming meetings
+- `GET /api/meetings/:id`: Get meeting by ID
+- `GET /api/meetings/:id/discussions`: Get discussions for a meeting
+- `GET /api/meetings/:id/key-moments`: Get key moments for a meeting
+- `POST /api/meetings/upload`: Upload meeting data
+
+### Decision Endpoints
+- `GET /api/decisions`: Get all decisions
+- `GET /api/decisions/recent`: Get recent decisions
+- `GET /api/decisions/:id`: Get decision by ID
+- `GET /api/meetings/:id/decisions`: Get decisions for a meeting
+- `POST /api/decisions/upload`: Upload decision data
+
+### Topic Endpoints
+- `GET /api/topics`: Get all topics
+- `GET /api/topics/popular`: Get popular topics
+- `GET /api/topics/:name`: Get topic by name
+- `GET /api/topics/:name/meetings`: Get meetings for a topic
+- `POST /api/topics/upload`: Upload topic data
+
+### Neighborhood Endpoints
+- `GET /api/neighborhoods`: Get all neighborhoods
+- `GET /api/neighborhoods/:id`: Get neighborhood by ID
+- `GET /api/neighborhoods/:id/meetings`: Get meetings for a neighborhood
+
+### Maxun Integration Endpoints
+- `GET /api/maxun/robots`: List available robots
+- `POST /api/maxun/robots/:id/run`: Run a specific robot
+- `GET /api/maxun/jobs/:id`: Get job status and results
+- `POST /api/maxun/sync`: Sync robot data to database
+
+## Environment Variables
+
+CouncilInsight uses environment variables for configuration. Create a `.env` file in the root directory with the following variables:
+
+### Required Variables
+- `DATABASE_URL`: PostgreSQL connection string
+
+### Optional Variables
+- `PORT`: Server port (default: 3000)
+- `HOST`: Server host (default: 0.0.0.0)
+- `VITE_MAXUN_URL`: URL to the Maxun service
+- `VITE_MAXUN_API_KEY`: API key for Maxun authentication
+- `VITE_MAXUN_USERNAME`: Username for Maxun basic authentication
+- `VITE_MAXUN_PASSWORD`: Password for Maxun basic authentication
+- `VITE_ENABLE_MAXUN_INTEGRATION`: Enable/disable Maxun integration (true/false)
+
+**Note:** All client-side variables must be prefixed with `VITE_` to be accessible in the browser.
 
 ## Maxun Integration
 
-CouncilInsight uses Maxun for data extraction from the Oak Bay municipal website.
+CouncilInsight can integrate with the Maxun web scraping service to automatically collect council meeting data.
 
-### Setting up Maxun
+### Maxun Service Setup
 
-1. Start the Maxun services: `docker-compose up -d maxun-postgres maxun-redis maxun-minio maxun-backend maxun-frontend`
-2. Access the Maxun dashboard at http://localhost:5174
-3. Create a new account and log in
-4. Generate an API key from your user profile
-5. Add the API key to your environment variables (MAXUN_API_KEY)
+1. Install Maxun (if not using the provided Docker container):
+   ```bash
+   npm install -g maxun
+   ```
 
-### Creating Robots
+2. Configure Maxun with your scraping robots:
+   ```bash
+   mkdir -p maxun/robots
+   # Add robot definitions to the robots directory
+   ```
 
-1. In the Maxun dashboard, create a new robot
-2. Configure it to scrape the Oak Bay meeting pages
-3. Run the robot to extract meeting data
-4. Use the CouncilInsight Data Ingestion page to synchronize the data with the database
+3. Start Maxun service:
+   ```bash
+   maxun start --port 8080
+   ```
 
-## Direct Data Upload
+### Connecting CouncilInsight to Maxun
 
-If you prefer not to use Maxun for data extraction, CouncilInsight also supports direct data upload:
+1. Set the Maxun URL and authentication in your environment variables:
+   ```
+   VITE_MAXUN_URL=http://localhost:8080
+   VITE_MAXUN_API_KEY=your-api-key
+   ```
 
-1. Navigate to the Data Ingestion page
-2. Select the "Direct Upload" tab
-3. Choose the data type (Meetings, Decisions, or Topics)
-4. Enter your data in JSON format or use the template
-5. Click "Upload Data" to import it into the database
+2. Use the Data Ingestion page in CouncilInsight to:
+   - View available robots
+   - Run robots manually
+   - Check job status
+   - Import data from completed jobs
+
+### Robot Development
+
+To create new scraping robots for Maxun:
+
+1. Create a new robot definition file in `maxun/robots/`
+2. Define the scraping logic following Maxun's robot format
+3. Restart the Maxun service to load the new robot
+4. Access the robot through the CouncilInsight Data Ingestion page
+
+## Deployment
+
+CouncilInsight supports multiple deployment options, with the recommended approach being a dual-deployment to Vercel and Google Cloud Run. See [DEPLOY.md](DEPLOY.md) for detailed deployment instructions.
+
+## Troubleshooting
+
+### Common Issues
+
+#### Application Won't Start
+- Check if all dependencies are installed
+- Verify environment variables are correctly set
+- Ensure the database connection is active
+
+#### API Errors
+- Check server logs for errors
+- Verify database schema is up to date
+- Ensure API endpoints are correctly called
+
+#### Maxun Integration Issues
+- Verify Maxun service is running
+- Check authentication credentials
+- Ensure robots are correctly defined
+
+#### Database Issues
+- Verify connection string is correct
+- Check database permissions
+- Run database migrations if needed
 
 ## Contributing
 
-We welcome contributions to CouncilInsight! Please feel free to submit issues and pull requests.
+We welcome contributions to CouncilInsight! To contribute:
 
-## License
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Please ensure your code follows the project's coding standards and includes appropriate tests.
+
+---
+
+For more information or support, please contact the project maintainers.
