@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
+import { 
+  BarChart3, Calendar, LightbulbIcon, CheckCircle, BarChart2, MapPin,
+  Home, Bike, Palmtree, Building, Database, Bell, Bookmark, Settings, ChevronRight
+} from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,26 +18,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   };
 
   const navItems = [
-    { label: 'Dashboard', icon: 'fa-home', path: '/' },
-    { label: 'Meetings', icon: 'fa-calendar-alt', path: '/meetings' },
-    { label: 'Topics', icon: 'fa-lightbulb', path: '/topics' },
-    { label: 'Decisions', icon: 'fa-check-circle', path: '/decisions' },
-    { label: 'Analytics', icon: 'fa-chart-bar', path: '/analytics' },
-    { label: 'Neighborhoods', icon: 'fa-map-marker-alt', path: '/neighborhoods' },
+    { label: 'Dashboard', icon: BarChart3, path: '/' },
+    { label: 'Meetings', icon: Calendar, path: '/meetings' },
+    { label: 'Topics', icon: LightbulbIcon, path: '/topics' },
+    { label: 'Decisions', icon: CheckCircle, path: '/decisions' },
+    { label: 'Analytics', icon: BarChart2, path: '/analytics' },
+    { label: 'Neighborhoods', icon: MapPin, path: '/neighborhoods' },
   ];
 
   const projectItems = [
-    { label: 'Housing Action', icon: 'fa-home', path: '/projects/housing' },
-    { label: 'Active Transportation', icon: 'fa-bicycle', path: '/projects/transportation' },
-    { label: 'Parks & Facilities', icon: 'fa-tree', path: '/projects/parks' },
-    { label: 'Community Planning', icon: 'fa-building', path: '/projects/planning' },
+    { label: 'Housing Action', icon: Home, path: '/projects/housing' },
+    { label: 'Active Transportation', icon: Bike, path: '/projects/transportation' },
+    { label: 'Parks & Facilities', icon: Palmtree, path: '/projects/parks' },
+    { label: 'Community Planning', icon: Building, path: '/projects/planning' },
   ];
 
   const toolItems = [
-    { label: 'Data Ingestion', icon: 'fa-database', path: '/data-ingestion' },
-    { label: 'My Alerts', icon: 'fa-bell', path: '/alerts' },
-    { label: 'Saved Items', icon: 'fa-bookmark', path: '/saved' },
-    { label: 'Settings', icon: 'fa-cog', path: '/settings' },
+    { label: 'Data Ingestion', icon: Database, path: '/data-ingestion' },
+    { label: 'My Alerts', icon: Bell, path: '/alerts' },
+    { label: 'Saved Items', icon: Bookmark, path: '/saved' },
+    { label: 'Settings', icon: Settings, path: '/settings' },
   ];
 
   return (
@@ -53,7 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 ? 'text-[#0056a6] bg-[#e6f1f9]' 
                 : 'text-gray-600 hover:bg-gray-50 hover:text-[#0056a6]'}`}
             >
-              <i className={`fas ${item.icon} w-5 mr-3 ${isActive(item.path) ? 'text-[#0056a6]' : 'text-gray-500'}`}></i>
+              <item.icon className={`w-5 h-5 mr-3 ${isActive(item.path) ? 'text-[#0056a6]' : 'text-gray-500'}`} />
               {item.label}
             </Link>
           ))}
@@ -73,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 ? 'text-[#0056a6] bg-[#e6f1f9]' 
                 : 'text-gray-600 hover:bg-gray-50 hover:text-[#0056a6]'}`}
             >
-              <i className={`fas ${item.icon} w-5 mr-3 ${isActive(item.path) ? 'text-[#0056a6]' : 'text-gray-500'}`}></i>
+              <item.icon className={`w-5 h-5 mr-3 ${isActive(item.path) ? 'text-[#0056a6]' : 'text-gray-500'}`} />
               {item.label}
             </Link>
           ))}
@@ -93,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 ? 'text-[#0056a6] bg-[#e6f1f9]' 
                 : 'text-gray-600 hover:bg-gray-50 hover:text-[#0056a6]'}`}
             >
-              <i className={`fas ${item.icon} w-5 mr-3 ${isActive(item.path) ? 'text-[#0056a6]' : 'text-gray-500'}`}></i>
+              <item.icon className={`w-5 h-5 mr-3 ${isActive(item.path) ? 'text-[#0056a6]' : 'text-gray-500'}`} />
               {item.label}
             </Link>
           ))}
@@ -104,7 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className="text-sm font-medium">Need help?</div>
             <p className="text-xs text-gray-500 mt-1">Check out our user guide or contact support.</p>
             <a href="#" className="mt-2 text-xs font-medium text-[#0056a6] hover:text-[#004e95] flex items-center">
-              Learn more <i className="fas fa-chevron-right ml-1 text-xs"></i>
+              Learn more <ChevronRight className="ml-1 h-3 w-3" />
             </a>
           </div>
         </div>

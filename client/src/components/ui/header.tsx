@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Bell, Mic, Menu } from 'lucide-react';
 import { Link } from 'wouter';
 
 interface HeaderProps {
@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
         <div className="flex items-center justify-between h-16">
           {/* Logo and site name */}
           <div className="flex items-center space-x-3">
-            <img src="https://www.oakbay.ca/sites/default/files/oak-bay-logo-colour-2023.png" alt="Oak Bay Logo" className="h-10" />
+            <img src="/OB-logo.png" alt="Oak Bay Logo" className="h-10" />
             <div className="border-l border-gray-300 h-8 mx-1"></div>
             <div>
               <div className="font-heading font-semibold text-[#0056a6] leading-tight">CouncilInsight</div>
@@ -32,7 +32,7 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
           <div className="hidden md:flex flex-1 max-w-2xl mx-6">
             <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i className="fas fa-search text-gray-400"></i>
+                <Search className="h-4 w-4 text-gray-400" />
               </div>
               <input 
                 type="text" 
@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <button className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <i className="fas fa-microphone text-gray-400 hover:text-[#0056a6]"></i>
+                <Mic className="h-4 w-4 text-gray-400 hover:text-[#0056a6]" />
               </button>
             </div>
           </div>
@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
             </button>
             <div className="hidden sm:flex items-center">
               <button className="p-2 text-gray-500 hover:text-[#0056a6] relative">
-                <i className="fas fa-bell"></i>
+                <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 h-2 w-2 bg-[#e2b33d] rounded-full"></span>
               </button>
             </div>
@@ -71,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
               </div>
             </div>
             <button className="md:hidden p-2 focus:outline-none" id="mobile-menu-button">
-              <i className="fas fa-bars text-gray-500"></i>
+              <Menu className="h-5 w-5 text-gray-500" />
             </button>
           </div>
         </div>
@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
           <div className="md:hidden pb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i className="fas fa-search text-gray-400"></i>
+                <Search className="h-4 w-4 text-gray-400" />
               </div>
               <input 
                 type="text" 
