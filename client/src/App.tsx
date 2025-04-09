@@ -10,6 +10,15 @@ import Meetings from "@/pages/meetings";
 import Topics from "@/pages/topics";
 import Decisions from "@/pages/decisions";
 import DataIngestion from "@/pages/data-ingestion";
+import Analytics from "@/pages/analytics";
+import Neighborhoods from "@/pages/neighborhoods";
+import HousingProject from "@/pages/projects/housing";
+import TransportationProject from "@/pages/projects/transportation";
+import ParksProject from "@/pages/projects/parks";
+import PlanningProject from "@/pages/projects/planning";
+import Alerts from "@/pages/alerts";
+import Saved from "@/pages/saved";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -34,7 +43,16 @@ function Router() {
             <Route path="/meetings" component={Meetings} />
             <Route path="/topics" component={Topics} />
             <Route path="/decisions" component={Decisions} />
+            <Route path="/analytics" component={Analytics} />
+            <Route path="/neighborhoods" component={Neighborhoods} />
+            <Route path="/projects/housing" component={HousingProject} />
+            <Route path="/projects/transportation" component={TransportationProject} />
+            <Route path="/projects/parks" component={ParksProject} />
+            <Route path="/projects/planning" component={PlanningProject} />
             <Route path="/data-ingestion" component={DataIngestion} />
+            <Route path="/alerts" component={Alerts} />
+            <Route path="/saved" component={Saved} />
+            <Route path="/settings" component={Settings} />
             {/* Fallback to 404 */}
             <Route component={NotFound} />
           </Switch>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Bell, Mic, Menu } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Bell, Mic, Menu, User, Settings, LogOut, CheckCircle, Calendar, AlertCircle } from 'lucide-react';
 import { Link } from 'wouter';
 
 interface HeaderProps {
@@ -13,20 +13,67 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'City Clerk', initials: 'JS' } }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Sample notifications
+  const notifications = [
+    {
+      id: 1,
+      title: "New decision added",
+      description: "Parks Master Plan was approved in the latest council meeting",
+      time: "10 minutes ago",
+      read: false,
+      type: "decision"
+    },
+    {
+      id: 2,
+      title: "Upcoming meeting",
+      description: "Regular Council Meeting tomorrow at 7:00 PM",
+      time: "1 hour ago",
+      read: false,
+      type: "meeting"
+    },
+    {
+      id: 3,
+      title: "Topic alert: Housing",
+      description: "Housing was discussed 3 times in recent meetings",
+      time: "2 hours ago",
+      read: true,
+      type: "topic"
+    }
+  ];
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo and site name */}
-          <div className="flex items-center space-x-3">
+          <Link href="/" className="flex items-center space-x-3">
             <img src="/OB-logo.png" alt="Oak Bay Logo" className="h-10" />
             <div className="border-l border-gray-300 h-8 mx-1"></div>
             <div>
               <div className="font-heading font-semibold text-[#0056a6] leading-tight">CouncilInsight</div>
               <div className="text-xs text-gray-500">Meeting Intelligence Platform</div>
             </div>
-          </div>
+          </Link>
           
           {/* Desktop Search bar */}
           <div className="hidden md:flex flex-1 max-w-2xl mx-6">
@@ -55,21 +102,115 @@ const Header: React.FC<HeaderProps> = ({ user = { name: 'Jane Smith', role: 'Cit
             >
               <Search className="h-5 w-5 text-gray-500" />
             </button>
-            <div className="hidden sm:flex items-center">
-              <button className="p-2 text-gray-500 hover:text-[#0056a6] relative">
+            
+            {/* Notifications */}
+            <div className="hidden sm:flex items-center relative" ref={notificationsRef}>
+              <button 
+                className="p-2 text-gray-500 hover:text-[#0056a6] relative"
+                onClick={() => {
+                  setNotificationsOpen(!notificationsOpen);
+                  setUserMenuOpen(false);
+                }}
+              >
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 h-2 w-2 bg-[#e2b33d] rounded-full"></span>
               </button>
+              
+              {/* Notifications Dropdown */}
+              {notificationsOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                  <div className="p-3 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="font-medium text-gray-800">Notifications</h3>
+                    <Link href="/alerts" className="text-sm text-[#0056a6] hover:text-[#004e95]">View all</Link>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.map(notification => (
+                      <div 
+                        key={notification.id} 
+                        className={`p-3 border-b border-gray-100 hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}
+                      >
+                        <div className="flex items-start">
+                          <div className="mr-3 mt-1">
+                            {notification.type === 'decision' && (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            )}
+                            {notification.type === 'meeting' && (
+                              <Calendar className="h-5 w-5 text-blue-500" />
+                            )}
+                            {notification.type === 'topic' && (
+                              <AlertCircle className="h-5 w-5 text-amber-500" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm text-gray-800">{notification.title}</div>
+                            <p className="text-xs text-gray-600 mt-0.5">{notification.description}</p>
+                            <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-3 bg-gray-50 text-center">
+                    <button className="text-sm text-[#0056a6] hover:text-[#004e95] font-medium">
+                      Mark all as read
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="flex items-center">
-              <div className="hidden md:block mr-3">
-                <div className="text-sm font-medium">{user.name}</div>
-                <div className="text-xs text-gray-500">{user.role}</div>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-[#cce3f3] text-[#0056a6] font-medium flex items-center justify-center">
-                {user.initials}
-              </div>
+            
+            {/* User Profile */}
+            <div className="flex items-center relative" ref={userMenuRef}>
+              <button 
+                onClick={() => {
+                  setUserMenuOpen(!userMenuOpen);
+                  setNotificationsOpen(false);
+                }}
+                className="flex items-center focus:outline-none"
+              >
+                <div className="hidden md:block mr-3">
+                  <div className="text-sm font-medium">{user.name}</div>
+                  <div className="text-xs text-gray-500">{user.role}</div>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-[#cce3f3] text-[#0056a6] font-medium flex items-center justify-center">
+                  {user.initials}
+                </div>
+              </button>
+              
+              {/* User Menu Dropdown */}
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                  <div className="p-3 border-b border-gray-100">
+                    <div className="font-medium text-gray-800">{user.name}</div>
+                    <div className="text-xs text-gray-500">{user.role}</div>
+                  </div>
+                  <div>
+                    <Link 
+                      href="/settings" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4 mr-3 text-gray-500" />
+                      Profile
+                    </Link>
+                    <Link 
+                      href="/settings" 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                      Settings
+                    </Link>
+                    <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-100">
+                      <LogOut className="h-4 w-4 mr-3 text-gray-500" />
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+            
+            {/* Mobile Menu Button */}
             <button className="md:hidden p-2 focus:outline-none" id="mobile-menu-button">
               <Menu className="h-5 w-5 text-gray-500" />
             </button>
