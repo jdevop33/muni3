@@ -625,7 +625,7 @@ export default function DataIngestionPage() {
                       id="maxun-url"
                       type="text"
                       placeholder="http://localhost:8080"
-                      defaultValue={process.env.MAXUN_URL || 'http://localhost:8080'}
+                      defaultValue={import.meta.env.VITE_MAXUN_URL || 'http://localhost:8080'}
                     />
                     <p className="text-sm text-muted-foreground">
                       The URL where your Maxun instance is running

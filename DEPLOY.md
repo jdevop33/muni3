@@ -25,17 +25,28 @@ This guide provides step-by-step instructions for deploying CouncilInsight to va
 2. Click "Add New..." and select "Project"
 3. Import your Git repository containing CouncilInsight
 4. Configure project settings:
-   - Framework Preset: Other
+   - Framework Preset: Vite
    - Build Command: `npm run build`
-   - Output Directory: `dist`
+   - Output Directory: `dist/public`
    - Install Command: `npm install`
+   - Root Directory: `./` (project root)
 5. Add environment variables:
    - `DATABASE_URL`: Your Neon connection string
-   - `MAXUN_URL`: URL to your Maxun instance (if applicable)
-   - `MAXUN_API_KEY`: Your Maxun API key (if using API authentication)
-   - Or `MAXUN_USERNAME` and `MAXUN_PASSWORD` if using basic authentication
+   - `VITE_MAXUN_URL`: URL to your Maxun instance (if applicable)
+   - `VITE_MAXUN_API_KEY`: Your Maxun API key (if using API authentication)
+   - Or `VITE_MAXUN_USERNAME` and `VITE_MAXUN_PASSWORD` if using basic authentication
 6. Click "Deploy"
 7. Once deployed, your app will be available at `https://your-project-name.vercel.app`
+
+**Note: vercel.json Configuration**
+CouncilInsight includes a `vercel.json` file in the root directory that contains configuration specifically for Vercel deployment, including:
+- URL rewrites to support SPA routing
+- Build configuration optimized for Vite apps
+
+**Note about Environment Variables:**
+- All client-side environment variables must be prefixed with `VITE_` to be accessible in the browser.
+- For backend environment variables (like `DATABASE_URL`), use normal naming conventions.
+- Vercel automatically exposes system environment variables like `VERCEL_ENV`.
 
 #### Option 2: Using Vercel CLI
 
