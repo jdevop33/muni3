@@ -1,8 +1,17 @@
 # CouncilInsight Deployment Guide
 
-This guide provides step-by-step instructions for deploying CouncilInsight to various cloud platforms, with a focus on Vercel + Neon DB integration as the recommended approach.
+This guide provides step-by-step instructions for deploying CouncilInsight to various cloud platforms, with a focus on the recommended dual-deployment architecture: Vercel for the web application and Google Cloud Run for the data ingestion service.
 
-## 1. Vercel Deployment (Recommended)
+## Recommended Architecture
+
+CouncilInsight works best with a dual-deployment approach:
+1. **Web Application:** Deploy to Vercel for optimal frontend performance and serverless functions
+2. **Data Ingestion Service (Maxun):** Deploy to Google Cloud Run for containerized robot execution
+3. **Shared Database:** Neon PostgreSQL database accessible to both services
+
+This architecture separates concerns while maintaining data consistency through the shared database.
+
+## 1. Vercel Deployment (Web Application)
 
 ### Prerequisites
 - A Vercel account (https://vercel.com)
@@ -87,37 +96,61 @@ After deployment, you'll need to initialize your database:
    npm run db:push
    ```
 
-## 2. Google Cloud Run Deployment
+## 2. Google Cloud Run Deployment (Maxun Data Ingestion Service)
 
-CouncilInsight includes built-in support for Google Cloud Run deployment via the included `deploy.sh` script.
+For the data ingestion service, we use Google Cloud Run which is ideal for containerized applications.
 
 ### Prerequisites
 - Google Cloud CLI installed and configured
-- Docker installed locally
+- Docker installed locally for building containers
 - A Google Cloud project with billing enabled
 - Cloud Run API enabled in your Google Cloud project
 
-### Deployment Steps
+### Deployment Steps for Maxun Container
 
-1. Update the `deploy.sh` script with your Google Cloud project ID if needed
-2. Set up environment variables:
+1. Inside the root directory, navigate to the Maxun directory:
    ```bash
-   export PROJECT_ID=your-gcp-project-id
-   export DATABASE_URL=your-postgresql-connection-string
-   export MAXUN_URL=your-maxun-url
-   export MAXUN_API_KEY=your-maxun-api-key
+   cd maxun
    ```
 
-3. Run the deployment script:
+2. Build the Maxun Docker image:
    ```bash
-   ./deploy.sh all
+   docker build -t gcr.io/[YOUR_PROJECT_ID]/maxun-service .
    ```
 
-4. The script will:
-   - Build your application Docker image
-   - Push it to Google Container Registry
-   - Deploy it to Cloud Run
-   - Output the deployed URL
+3. Push the image to Google Container Registry:
+   ```bash
+   docker push gcr.io/[YOUR_PROJECT_ID]/maxun-service
+   ```
+
+4. Deploy the container to Cloud Run:
+   ```bash
+   gcloud run deploy maxun-service \
+     --image gcr.io/[YOUR_PROJECT_ID]/maxun-service \
+     --platform managed \
+     --region us-central1 \
+     --allow-unauthenticated \
+     --set-env-vars="DATABASE_URL=[YOUR_NEON_DB_URL],MAXUN_API_KEY=[YOUR_API_KEY]"
+   ```
+
+5. Configure scheduled jobs (recommended for production):
+   ```bash
+   gcloud scheduler jobs create http maxun-daily-scrape \
+     --schedule="0 2 * * *" \
+     --uri="https://maxun-service-[HASH].run.app/api/maxun/sync" \
+     --http-method=POST
+   ```
+
+### Connecting Web App to Maxun Service
+
+Once deployed, update your Vercel environment variables:
+- `VITE_MAXUN_URL`: Set to the URL of your deployed Cloud Run service (e.g., `https://maxun-service-[HASH].run.app`)
+- `VITE_MAXUN_API_KEY`: Your Maxun API key for authentication
+
+This architecture allows:
+- Scheduled data collection through Cloud Run
+- On-demand data collection triggered from the web application
+- Consistent data access through the shared Neon database
 
 ## 3. AWS Elastic Beanstalk Deployment
 
@@ -178,6 +211,20 @@ For deployment to any server with Docker support:
 - Verify that your Maxun instance is accessible from the internet
 - Check that your API key or credentials are correctly set up
 - Try running a test robot from the Data Ingestion page after deployment
+- Ensure your Cloud Run service has the necessary permissions to access the database
+
+### Dual-Deployment Architecture Issues
+- **Cross-Origin Issues:** If you experience CORS errors, ensure your Cloud Run service has the appropriate headers:
+  ```
+  Access-Control-Allow-Origin: https://your-vercel-app.vercel.app
+  Access-Control-Allow-Methods: GET, POST, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, Authorization
+  ```
+- **Synchronization Issues:** If data isn't appearing in the web app after ingestion:
+  1. Check database permissions for both services
+  2. Verify that both services are using the same database schema version
+  3. Check Cloud Run logs for any errors during data processing
+- **Authentication Issues:** Ensure your Maxun API key is correctly set in both environments
 
 ## Maintenance
 
