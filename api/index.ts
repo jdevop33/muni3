@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "../server/routes"; // Adjusted path
-import { log } from "../server/vite"; // Adjusted path
+import { registerRoutes } from "../server/routes.ts"; // Corrected path
+import { log } from "../server/vite.ts"; // Corrected path
 
 // ADDED: Early log to confirm server startup attempt
 console.log('>>> [Vercel] Starting api/index.ts execution...');
