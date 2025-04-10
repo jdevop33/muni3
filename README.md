@@ -1,4 +1,4 @@
-# CouncilInsight Documentation
+# CouncilInsight Documentations
 
 CouncilInsight is a council meeting intelligence platform designed to enhance municipal transparency and community engagement for Oak Bay. This document provides comprehensive information about the application architecture, features, and development guidelines.
 
