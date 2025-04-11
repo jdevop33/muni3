@@ -6,7 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 // Use .js extension for runtime module resolution
 import { storage } from "./storage.js"; 
-import { User as SelectUser } from "../shared/schema.js"; // Corrected path and extension
+import type { User as SelectUser } from "../shared/schema.js"; // Corrected path and extension
 import connectPg from "connect-pg-simple";
 import { db } from "./db.js"; // Use .js extension
 import pg from 'pg';
