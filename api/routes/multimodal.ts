@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
-import openAIService from '../openai-service';
+import openAIService from '../openai-service.js'; // Use .js extension
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
-import { roleCheck } from '../auth';
+import { roleCheck } from '../auth.js'; // Use .js extension
 
 const mkdir = promisify(fs.mkdir);
 const unlink = promisify(fs.unlink);
