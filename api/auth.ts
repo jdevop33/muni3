@@ -48,15 +48,36 @@ async function comparePasswords(supplied: string, stored: string): Promise<boole
 type DoneCallback = (error: Error | null, user?: Express.User | false | null, options?: { message: string }) => void;
 
 export function setupAuth(app: Express) {
+  console.log(">>> [VERCEL_DEBUG] Entered setupAuth"); // DEBUG LOG 1
+  
   const PgSessionStore = connectPg(session);
   
-  if (!process.env.DATABASE_URL) {
+  const dbUrl = process.env.DATABASE_URL;
+  const sessionSecret = process.env.SESSION_SECRET;
+
+  console.log(`>>> [VERCEL_DEBUG] DATABASE_URL is set: ${!!dbUrl}`); // DEBUG LOG 2
+  console.log(`>>> [VERCEL_DEBUG] SESSION_SECRET is set: ${!!sessionSecret}`); // DEBUG LOG 3
+
+  if (!dbUrl) {
     console.error("FATAL ERROR: DATABASE_URL environment variable is not set.");
-    process.exit(1); 
+    // Avoid process.exit in serverless, let it crash naturally if needed
+    throw new Error("DATABASE_URL is not set"); 
   }
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL
-  });
+  if (!sessionSecret) {
+      console.warn("WARNING: SESSION_SECRET is not set. Using default (unsafe for production).");
+      // Allow default for now, but log warning
+  }
+
+  let pool;
+  try {
+    pool = new Pool({
+      connectionString: dbUrl
+    });
+    console.log(">>> [VERCEL_DEBUG] Session DB Pool created"); // DEBUG LOG 4
+  } catch (poolError) {
+    console.error(">>> [VERCEL_DEBUG] FATAL ERROR creating Session DB Pool:", poolError);
+    throw poolError; // Crash if pool creation fails
+  }
   
   const sessionSettings: session.SessionOptions = {
     store: new PgSessionStore({
@@ -64,7 +85,7 @@ export function setupAuth(app: Express) {
       tableName: 'sessions',
       createTableIfMissing: true
     }),
-    secret: process.env.SESSION_SECRET || "council-insight-secret",
+    secret: sessionSecret || "council-insight-secret", // Use default only if env var is missing
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -75,32 +96,43 @@ export function setupAuth(app: Express) {
     }
   };
 
-  app.set("trust proxy", 1);
-  app.use(session(sessionSettings));
-  app.use(passport.initialize());
-  app.use(passport.session());
+  console.log(">>> [VERCEL_DEBUG] Session settings configured"); // DEBUG LOG 5
+
+  try {
+    app.set("trust proxy", 1); // Needed for secure cookies if behind proxy
+    app.use(session(sessionSettings));
+    console.log(">>> [VERCEL_DEBUG] Session middleware applied"); // DEBUG LOG 6
+    app.use(passport.initialize());
+    console.log(">>> [VERCEL_DEBUG] Passport initialized"); // DEBUG LOG 7
+    app.use(passport.session());
+    console.log(">>> [VERCEL_DEBUG] Passport session applied"); // DEBUG LOG 8
+  } catch (middlewareError) {
+      console.error(">>> [VERCEL_DEBUG] FATAL ERROR applying session/passport middleware:", middlewareError);
+      throw middlewareError;
+  }
 
   const localStrategyVerify: VerifyFunction = async (username, password, done) => {
      try {
-        console.log(`Attempting login for username: ${username}`); 
+        console.log(`>>> [VERCEL_DEBUG] Passport verify callback for: ${username}`); 
         const user = await storage.getUserByUsername(username);
         if (!user) {
-          console.log(`Login failed: User ${username} not found`); 
+          console.log(`>>> [VERCEL_DEBUG] Login failed: User ${username} not found`); 
           return done(null, false, { message: "Invalid username or password" }); 
         }
         if (!user.password) {
-             console.log(`Login failed: User ${username} has no password set`); 
+             console.log(`>>> [VERCEL_DEBUG] Login failed: User ${username} has no password set`); 
              return done(null, false, { message: "Invalid user configuration" });
         }
+        console.log(`>>> [VERCEL_DEBUG] Comparing passwords for ${username}`);
         const passwordsMatch = await comparePasswords(password, user.password);
         if (!passwordsMatch) {
-           console.log(`Login failed: Invalid password for user ${username}`); 
+           console.log(`>>> [VERCEL_DEBUG] Login failed: Invalid password for user ${username}`); 
            return done(null, false, { message: "Invalid username or password" });
         }
-        console.log(`Login successful for user: ${username}`); 
+        console.log(`>>> [VERCEL_DEBUG] Passwords match for ${username}`); 
         return done(null, user);
       } catch (error) {
-        console.error(`Error during authentication for ${username}:`, error); 
+        console.error(`>>> [VERCEL_DEBUG] Error during Passport verify for ${username}:`, error); 
         return done(error instanceof Error ? error : new Error(String(error))); 
       }
   };
@@ -108,19 +140,24 @@ export function setupAuth(app: Express) {
   passport.use(new LocalStrategy(localStrategyVerify));
 
   passport.serializeUser((user: Express.User, done: (err: null, id?: number) => void) => {
+     console.log(`>>> [VERCEL_DEBUG] Serializing user ID: ${user.id}`);
      done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done: (err: Error | null, user?: Express.User | false | null) => void) => {
+    console.log(`>>> [VERCEL_DEBUG] Deserializing user ID: ${id}`);
     try {
       const user = await storage.getUser(id);
+      console.log(`>>> [VERCEL_DEBUG] Deserialized user: ${user ? user.username : 'Not Found'}`);
       done(null, user || false); 
     } catch (error) {
+      console.error(`>>> [VERCEL_DEBUG] Error deserializing user ID ${id}:`, error);
       done(error instanceof Error ? error : new Error(String(error)));
     }
   });
 
   app.post("/api/register", async (req: Request, res: Response, next: NextFunction) => {
+    // ... (registration logic remains the same)
     try {
       if (!req.body.username || !req.body.password) {
           return res.status(400).json({ error: "Username and password are required" });
@@ -142,36 +179,40 @@ export function setupAuth(app: Express) {
 
       req.login(user, (err: any) => { 
         if (err) {
-           console.error("Error logging in after registration:", err);
+           console.error(">>> [VERCEL_DEBUG] Error logging in after registration:", err);
            return next(err);
         }
+        console.log(">>> [VERCEL_DEBUG] User registered and logged in successfully.");
         res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
-      console.error("Error during registration:", error); 
+      console.error(">>> [VERCEL_DEBUG] Error during registration:", error); 
       next(error);
     }
   });
 
   app.post("/api/login", (req: Request, res: Response, next: NextFunction) => {
+    console.log(">>> [VERCEL_DEBUG] POST /api/login route hit");
     passport.authenticate("local", (err: Error | null, user: Express.User | false | null, info?: { message: string }) => {
+      console.log(`>>> [VERCEL_DEBUG] Passport authenticate callback. Error: ${err}, User: ${user ? user.username : user}`);
       if (err) {
-        console.error("Login error during passport.authenticate:", err); 
+        console.error(">>> [VERCEL_DEBUG] Login error during passport.authenticate:", err); 
         return next(err);
       }
       if (!user) {
         const message = info?.message || "Authentication failed: Invalid credentials or user not found.";
-        console.log(`Login failed (passport.authenticate): ${message}`); 
+        console.log(`>>> [VERCEL_DEBUG] Passport auth failed: ${message}`); 
         return res.status(401).json({ error: message });
       }
+      console.log(`>>> [VERCEL_DEBUG] Passport auth succeeded for user: ${user.username}. Attempting req.login...`);
       req.login(user, (loginErr: any) => { 
         if (loginErr) {
-          console.error("Login error during req.login:", loginErr); 
+          console.error(">>> [VERCEL_DEBUG] FATAL Error during req.login:", loginErr); 
           return next(loginErr);
         }
         const userWithoutPassword: Partial<SelectUser> = { ...user };
         delete userWithoutPassword.password;
-        console.log(`User ${user.username} successfully logged in.`); 
+        console.log(`>>> [VERCEL_DEBUG] req.login successful. User ${user.username} fully logged in.`); 
         return res.status(200).json(userWithoutPassword);
       });
     })(req, res, next);
@@ -179,16 +220,19 @@ export function setupAuth(app: Express) {
 
   app.post("/api/logout", (req: Request, res: Response, next: NextFunction) => {
     const username = req.user?.username;
+    console.log(`>>> [VERCEL_DEBUG] Attempting logout for user: ${username}`);
     req.logout((err: any) => { 
       if (err) {
-        console.error(`Error during logout for user ${username}:`, err); 
+        console.error(`>>> [VERCEL_DEBUG] Error during logout for user ${username}:`, err); 
         return next(err);
       }
-      console.log(`User ${username} logged out.`); 
+      console.log(`>>> [VERCEL_DEBUG] User ${username} logged out via req.logout.`); 
       req.session.destroy((destroyErr: any) => { 
          if (destroyErr) {
-            console.error(`Error destroying session for user ${username}:`, destroyErr);
-         }         
+            console.error(`>>> [VERCEL_DEBUG] Error destroying session for user ${username}:`, destroyErr);
+         } else {
+             console.log(`>>> [VERCEL_DEBUG] Session destroyed successfully for user ${username}.`);
+         }
          res.clearCookie('connect.sid'); 
          res.status(200).json({ message: "Logout successful"});
       }); 
@@ -196,6 +240,7 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req: Request, res: Response) => {
+    console.log(`>>> [VERCEL_DEBUG] GET /api/user hit. Authenticated: ${req.isAuthenticated()}, User: ${req.user?.username}`);
     if (!req.isAuthenticated()) {
        return res.status(401).json({ error: "Not authenticated" });
     }
@@ -205,22 +250,29 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/admin", roleCheck(['admin']), (req: Request, res: Response) => {
+    console.log(`>>> [VERCEL_DEBUG] GET /api/admin hit by user: ${req.user?.username}`);
     res.json({ message: "Admin access granted", user: req.user });
   });
+
+  console.log(">>> [VERCEL_DEBUG] setupAuth finished applying routes/middleware"); // DEBUG LOG 9
 }
 
 export function roleCheck(allowedRoles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
+    console.log(`>>> [VERCEL_DEBUG] Role check for path: ${req.path}, User: ${req.user?.username}, Role: ${req.user?.role}`);
     if (!req.isAuthenticated()) {
+      console.log(">>> [VERCEL_DEBUG] Role check failed: Not authenticated");
       return res.status(401).json({ error: "Not authenticated" });
     }
     
     const userRole = req.user?.role ?? '';
     
     if (!allowedRoles.includes(userRole)) {
+      console.log(`>>> [VERCEL_DEBUG] Role check failed: User role '${userRole}' not in allowed roles [${allowedRoles.join(', ')}]`);
       return res.status(403).json({ error: "Not authorized" });
     }
     
+    console.log(">>> [VERCEL_DEBUG] Role check passed.");
     next();
   };
 }
