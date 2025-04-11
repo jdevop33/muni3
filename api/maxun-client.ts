@@ -7,12 +7,12 @@
 
 import axios from 'axios';
 import { Router } from 'express';
-import { storage } from './storage';
-import { db } from './db';
-import { meetings, decisions, topics } from '@shared/schema';
-import { insertMeetingSchema, insertDecisionSchema, insertTopicSchema } from '@shared/schema';
+import { storage } from "./storage.js"; // Use .js extension
+import { db } from "./db.js"; // Use .js extension
+import { meetings, decisions, topics } from "../shared/schema.js"; // Use relative path and .js extension
+import { insertMeetingSchema, insertDecisionSchema, insertTopicSchema } from "../shared/schema.js"; // Use relative path and .js extension
 import { eq, sql } from 'drizzle-orm';
-import { log } from './vite';
+import { log } from "./vite.js"; // Use .js extension
 
 interface MaxunConfig {
   baseUrl: string;
