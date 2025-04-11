@@ -1,11 +1,12 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { router as maxunRouter } from "./maxun-client";
-import { router as multimodalRouter } from "./routes/multimodal";
-import { log } from "./vite";
-import { setupAuth, roleCheck } from "./auth";
-import type { Meeting, Decision, Topic } from "../shared/schema.ts"; // Corrected import path
+// Use .js extension for runtime module resolution
+import { storage } from "./storage.js"; 
+import { router as maxunRouter } from "./maxun-client.js"; 
+import { router as multimodalRouter } from "./routes/multimodal.js"; 
+import { log } from "./vite.js"; 
+import { setupAuth, roleCheck } from "./auth.js"; 
+import type { Meeting, Decision, Topic } from "../shared/schema.js"; // Path alias might not work reliably, use relative path
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication

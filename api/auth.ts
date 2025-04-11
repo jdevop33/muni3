@@ -1,26 +1,25 @@
 import passport from "passport";
-import { Strategy as LocalStrategy, VerifyFunction } from "passport-local"; // Import VerifyFunction
+import { Strategy as LocalStrategy, VerifyFunction } from "passport-local"; 
 import { Express, Request, Response, NextFunction } from "express"; 
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+// Use .js extension for runtime module resolution
+import { storage } from "./storage.js"; 
+import { User as SelectUser } from "../shared/schema.js"; // Corrected path and extension
 import connectPg from "connect-pg-simple";
-import { db } from "./db";
+import { db } from "./db.js"; // Use .js extension
 import pg from 'pg';
 const { Pool } = pg;
 
 declare global {
   namespace Express {
-    // eslint-disable-next-line @typescript-eslint/no-empty-interface
     interface User extends SelectUser {}
   }
 }
 
 const scryptAsync = promisify(scrypt);
 
-// Export this function so storage.ts can use it
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
@@ -46,7 +45,6 @@ async function comparePasswords(supplied: string, stored: string): Promise<boole
   }
 }
 
-// Type for the passport 'done' callback used internally by passport
 type DoneCallback = (error: Error | null, user?: Express.User | false | null, options?: { message: string }) => void;
 
 export function setupAuth(app: Express) {
@@ -82,14 +80,12 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Use the imported VerifyFunction type for the strategy callback
   const localStrategyVerify: VerifyFunction = async (username, password, done) => {
      try {
         console.log(`Attempting login for username: ${username}`); 
         const user = await storage.getUserByUsername(username);
         if (!user) {
           console.log(`Login failed: User ${username} not found`); 
-          // Use 'false' for failed auth, not 'null'
           return done(null, false, { message: "Invalid username or password" }); 
         }
         if (!user.password) {
@@ -102,7 +98,7 @@ export function setupAuth(app: Express) {
            return done(null, false, { message: "Invalid username or password" });
         }
         console.log(`Login successful for user: ${username}`); 
-        return done(null, user); // Pass the full user object on success
+        return done(null, user);
       } catch (error) {
         console.error(`Error during authentication for ${username}:`, error); 
         return done(error instanceof Error ? error : new Error(String(error))); 
@@ -111,7 +107,6 @@ export function setupAuth(app: Express) {
 
   passport.use(new LocalStrategy(localStrategyVerify));
 
-  // Add types for serializeUser and deserializeUser
   passport.serializeUser((user: Express.User, done: (err: null, id?: number) => void) => {
      done(null, user.id);
   });
@@ -119,14 +114,12 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done: (err: Error | null, user?: Express.User | false | null) => void) => {
     try {
       const user = await storage.getUser(id);
-      // Use 'false' if user not found, consistent with VerifyFunction
       done(null, user || false); 
     } catch (error) {
       done(error instanceof Error ? error : new Error(String(error)));
     }
   });
 
-  // Add types for route handlers
   app.post("/api/register", async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.body.username || !req.body.password) {
@@ -211,13 +204,11 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
 
-  // Role-based middleware for protected routes
-  app.get("/api/admin", roleCheck(["admin"]), (req: Request, res: Response) => {
+  app.get("/api/admin", roleCheck(['admin']), (req: Request, res: Response) => {
     res.json({ message: "Admin access granted", user: req.user });
   });
 }
 
-// Role-based authorization middleware
 export function roleCheck(allowedRoles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) {
