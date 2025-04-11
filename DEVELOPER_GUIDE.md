@@ -2,7 +2,7 @@
 
 This document provides detailed information for developers working on the CouncilInsight codebase, including architecture decisions, code conventions, and development workflows.
 
-## Table of Contents
+## Table of Contentsz
 
 - [Architecture Decisions](#architecture-decisions)
 - [Code Organization](#code-organization)
