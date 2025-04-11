@@ -12,7 +12,7 @@ import { db } from "./db.js"; // Use .js extension
 import { meetings, decisions, topics } from "../shared/schema.js"; // Use relative path and .js extension
 import { insertMeetingSchema, insertDecisionSchema, insertTopicSchema } from "../shared/schema.js"; // Use relative path and .js extension
 import { eq, sql } from 'drizzle-orm';
-import { log } from "./vite.js"; // Use .js extension
+// import { log } from "./vite.js"; // REMOVED - Vite/dev server logic not needed in API
 
 interface MaxunConfig {
   baseUrl: string;
@@ -64,7 +64,7 @@ export class MaxunClient {
       // If API key is provided, use it
       if (this.config.authMethod === 'apiKey' && this.config.apiKey) {
         this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${this.config.apiKey}`;
-        log('Using API key for Maxun authentication', 'maxun');
+        console.log('Using API key for Maxun authentication', 'maxun'); // Use console.log
         return true;
       } 
       // Otherwise, use username/password
@@ -81,7 +81,7 @@ export class MaxunClient {
         if (response.data && response.data.token) {
           this.token = response.data.token;
           this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
-          log('Authenticated with Maxun API using credentials', 'maxun');
+          console.log('Authenticated with Maxun API using credentials', 'maxun'); // Use console.log
           return true;
         }
       } else {
@@ -90,7 +90,7 @@ export class MaxunClient {
       
       return false;
     } catch (error) {
-      log(`Error authenticating with Maxun: ${error}`, 'maxun');
+      console.error(`Error authenticating with Maxun: ${error}`, 'maxun'); // Use console.error
       return false;
     }
   }
@@ -107,7 +107,7 @@ export class MaxunClient {
       const response = await this.axiosInstance.get('/api/robots');
       return response.data.robots || [];
     } catch (error) {
-      log(`Error getting robots from Maxun: ${error}`, 'maxun');
+      console.error(`Error getting robots from Maxun: ${error}`, 'maxun'); // Use console.error
       return [];
     }
   }
@@ -124,7 +124,7 @@ export class MaxunClient {
       const response = await this.axiosInstance.get(`/api/robots/${robotId}`);
       return response.data.robot || null;
     } catch (error) {
-      log(`Error getting robot from Maxun: ${error}`, 'maxun');
+      console.error(`Error getting robot from Maxun: ${error}`, 'maxun'); // Use console.error
       return null;
     }
   }
@@ -141,7 +141,7 @@ export class MaxunClient {
       const response = await this.axiosInstance.post(`/api/robots/${robotId}/run`, { params });
       return response.data.jobId || '';
     } catch (error) {
-      log(`Error running robot from Maxun: ${error}`, 'maxun');
+      console.error(`Error running robot from Maxun: ${error}`, 'maxun'); // Use console.error
       return '';
     }
   }
@@ -158,7 +158,7 @@ export class MaxunClient {
       const response = await this.axiosInstance.get(`/api/jobs/${jobId}`);
       return response.data.job || null;
     } catch (error) {
-      log(`Error getting robot results from Maxun: ${error}`, 'maxun');
+      console.error(`Error getting robot results from Maxun: ${error}`, 'maxun'); // Use console.error
       return null;
     }
   }
@@ -195,13 +195,13 @@ export class MaxunClient {
         if (existingMeetings.length === 0) {
           // Create new meeting
           await db.insert(meetings).values(meetingData);
-          log(`Added new meeting: ${meetingData.title}`, 'maxun');
+          console.log(`Added new meeting: ${meetingData.title}`, 'maxun'); // Use console.log
         } else {
           // Update existing meeting
           await db.update(meetings)
             .set(meetingData)
             .where(eq(meetings.id, existingMeetings[0].id));
-          log(`Updated meeting: ${meetingData.title}`, 'maxun');
+          console.log(`Updated meeting: ${meetingData.title}`, 'maxun'); // Use console.log
         }
 
         // Process any decisions from the meeting
@@ -219,7 +219,7 @@ export class MaxunClient {
         }
       }
     } catch (error) {
-      log(`Error processing meeting data: ${error}`, 'maxun');
+      console.error(`Error processing meeting data: ${error}`, 'maxun'); // Use console.error
     }
   }
 
@@ -253,16 +253,16 @@ export class MaxunClient {
       if (existingDecisions.length === 0) {
         // Create new decision
         await db.insert(decisions).values(decision);
-        log(`Added new decision: ${decision.title}`, 'maxun');
+        console.log(`Added new decision: ${decision.title}`, 'maxun'); // Use console.log
       } else {
         // Update existing decision
         await db.update(decisions)
           .set(decision)
           .where(eq(decisions.id, existingDecisions[0].id));
-        log(`Updated decision: ${decision.title}`, 'maxun');
+        console.log(`Updated decision: ${decision.title}`, 'maxun'); // Use console.log
       }
     } catch (error) {
-      log(`Error processing decision data: ${error}`, 'maxun');
+      console.error(`Error processing decision data: ${error}`, 'maxun'); // Use console.error
     }
   }
 
@@ -283,7 +283,7 @@ export class MaxunClient {
           count: 1,
           lastDiscussed: new Date(),
         });
-        log(`Added new topic: ${topicName}`, 'maxun');
+        console.log(`Added new topic: ${topicName}`, 'maxun'); // Use console.log
       } else {
         // Update existing topic - increment count
         await db.update(topics)
@@ -292,10 +292,10 @@ export class MaxunClient {
             lastDiscussed: new Date(),
           })
           .where(eq(topics.id, existingTopics[0].id));
-        log(`Updated topic: ${topicName}`, 'maxun');
+        console.log(`Updated topic: ${topicName}`, 'maxun'); // Use console.log
       }
     } catch (error) {
-      log(`Error processing topic data: ${error}`, 'maxun');
+      console.error(`Error processing topic data: ${error}`, 'maxun'); // Use console.error
     }
   }
 }
