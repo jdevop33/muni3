@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
-import { createServer as createViteServer, createLogger } from "vite";
+import { createServer as createViteServer, createLogger, ServerOptions } from "vite"; // Import ServerOptions
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
@@ -20,10 +20,12 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  const serverOptions = {
+  // Explicitly type serverOptions to satisfy stricter checks if necessary,
+  // although just `true` should be fine.
+  const serverOptions: ServerOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    allowedHosts: true, // This value is boolean but satisfies the 'true' literal type
   };
 
   const vite = await createViteServer({
@@ -46,7 +48,7 @@ export async function setupVite(app: Express, server: Server) {
 
     try {
       const clientTemplate = path.resolve(
-        import.meta.dirname,
+        __dirname, // Use __dirname in CJS context if running locally with tsx sometimes
         "..",
         "client",
         "index.html",
@@ -68,13 +70,15 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  const distPath = path.resolve(__dirname, "..", "dist", "public"); // Adjusted path relative to api/vite.ts if run directly
 
   if (!fs.existsSync(distPath)) {
+    console.error(`Build directory not found at: ${distPath}`); // Added log
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
     );
   }
+  console.log(`Serving static files from: ${distPath}`); // Added log
 
   app.use(express.static(distPath));
 

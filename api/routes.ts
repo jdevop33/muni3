@@ -5,6 +5,7 @@ import { router as maxunRouter } from "./maxun-client";
 import { router as multimodalRouter } from "./routes/multimodal";
 import { log } from "./vite";
 import { setupAuth, roleCheck } from "./auth";
+import type { Meeting, Decision, Topic } from "../shared/schema.ts"; // Corrected import path
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -272,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid data format. Expected an array of meetings.' });
       }
       
-      const results = [];
+      const results: Meeting[] = []; // Explicitly typed array
       
       for (const meetingData of data) {
         try {
@@ -308,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid data format. Expected an array of decisions.' });
       }
       
-      const results = [];
+      const results: Decision[] = []; // Explicitly typed array
       
       for (const decisionData of data) {
         try {
@@ -344,7 +345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid data format. Expected an array of topics.' });
       }
       
-      const results = [];
+      const results: Topic[] = []; // Explicitly typed array
       
       for (const topicData of data) {
         try {
@@ -441,6 +442,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  // The original code created and returned an http.Server instance here.
+  // For Vercel serverless functions, we typically don't create the server ourselves.
+  // The exported Express app instance (`app`) is usually what's needed.
+  // If registerRoutes truly needs to return a Server for local dev, 
+  // we might need slightly different handling for Vercel vs local.
+  // For now, assuming registerRoutes modifies `app` directly is sufficient.
+  
+  // Placeholder return - this might need adjustment if local dev breaks.
+  // Ideally, refactor registerRoutes to not return a Server or conditionally return it.
+  return createServer(app); 
 }
