@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage.js"; 
 import { router as maxunRouter } from "./maxun-client.js"; 
 import { router as multimodalRouter } from "./routes/multimodal.js"; 
-import { log } from "./vite.js"; 
+// import { log } from "./vite.js"; // Remove Vite import - not needed in serverless
 import { setupAuth, roleCheck } from "./auth.js"; 
 import type { Meeting, Decision, Topic } from "../shared/schema.js"; // Path alias might not work reliably, use relative path
 
@@ -85,22 +85,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Filter meetings by type
-  app.get('/api/meetings', async (req: Request, res: Response) => {
-    try {
-      const filterType = req.query.type as string;
-      
-      if (filterType && filterType !== 'all') {
-        const meetings = await storage.getMeetingsByType(filterType);
-        return res.json(meetings);
-      }
-      
-      const meetings = await storage.getMeetings();
-      res.json(meetings);
-    } catch (error) {
-      console.error('Error fetching meetings:', error);
-      res.status(500).json({ message: 'Error fetching meetings' });
-    }
-  });
+  // Note: Duplicate route definition for /api/meetings. Combining logic.
+  // app.get('/api/meetings', async (req: Request, res: Response) => { ... }); // Remove duplicate
 
   // Meeting discussions
   app.get('/api/meetings/:id/discussions', async (req: Request, res: Response) => {
@@ -379,8 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // This is a placeholder for actual document processing
-      // In a real implementation, we would process and store the document
-      // For now, we'll just acknowledge receipt
+      console.log(`Received document upload: ${title || 'Untitled'} (${documentType})`); // Use console.log
       
       res.json({ 
         success: true, 
@@ -443,14 +428,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // The original code created and returned an http.Server instance here.
-  // For Vercel serverless functions, we typically don't create the server ourselves.
-  // The exported Express app instance (`app`) is usually what's needed.
-  // If registerRoutes truly needs to return a Server for local dev, 
-  // we might need slightly different handling for Vercel vs local.
-  // For now, assuming registerRoutes modifies `app` directly is sufficient.
-  
-  // Placeholder return - this might need adjustment if local dev breaks.
-  // Ideally, refactor registerRoutes to not return a Server or conditionally return it.
-  return createServer(app); 
+  // This function only sets up routes on the app instance passed in.
+  // It no longer returns an http.Server for the serverless context.
+  // Return null or void, or adjust the call site in api/index.ts if needed.
+  return null as any; // Or simply have no return value
 }
