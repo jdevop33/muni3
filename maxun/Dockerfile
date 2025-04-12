@@ -1,8 +1,16 @@
-FROM node:18-slim
+FROM node:22-slim
 
 WORKDIR /app
 
-# Install puppeteer dependencies
+# Install Google Chrome Stable and necessary dependencies
+RUN apt-get update && apt-get install -y wget gnupg unzip --no-install-recommends && \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install original puppeteer dependencies (some might overlap, but ensures coverage)
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     fonts-liberation \
@@ -39,11 +47,15 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     libxtst6 \
     lsb-release \
-    wget \
-    xdg-utils
+    # wget -- already installed above
+    xdg-utils && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
+# Ensure Puppeteer doesn't try to download Chrome again
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN npm install --legacy-peer-deps
+
 COPY . .
 EXPOSE 8080
 ENV PORT=8080

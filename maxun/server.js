@@ -1,365 +1,141 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const puppeteer = require('puppeteer');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const puppeteer = require('puppeteer'); // Use puppeteer-core if using system chrome consistently
 const { Pool } = require('pg');
 const { Storage } = require('@google-cloud/storage');
-const adaptiveScraperRoutes = require('./api-routes.js'); // Add .js extension
+const adaptiveScraperRoutes = require('./api-routes.js');
 
 // Initialize Express app
 const app = express();
-app.use(express.json());
+const port = process.env.PORT || 8080;
 
-// Configure environment variables
-require('dotenv').config();
+// Middleware
+app.use(cors()); // Enable CORS for all routes
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Check for the Gemini API key
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-if (GEMINI_API_KEY) {
-  console.log('Gemini API key detected, adaptive scraping enabled');
-} else {
-  console.log('No Gemini API key found. To enable adaptive scraping, set GEMINI_API_KEY environment variable');
-}
-
-// Enable CORS for Vercel frontend
-app.use((req, res, next) => {
-  // Replace with your actual Vercel app URL in production
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-    process.env.ALLOWED_ORIGIN
-  ].filter(Boolean);
-  
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
-
-// Database connection
+// --- Database Configuration ---
 let pool;
-if (process.env.DATABASE_URL) {
+try {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set.');
+  }
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-      rejectUnauthorized: false // Required for some PostgreSQL providers like Neon
+      rejectUnauthorized: false // Required for Neon DB connections
     }
   });
-  
-  // Test database connection
+
+  // Test connection
   pool.query('SELECT NOW()', (err, res) => {
     if (err) {
-      console.error('Database connection error:', err);
+      console.error('Database connection error', err.stack);
     } else {
       console.log('Database connected successfully, server time:', res.rows[0].now);
     }
   });
+} catch (error) {
+  console.error("Failed to create database pool:", error);
+  // Exit if DB connection fails?
+  process.exit(1);
 }
 
-// Initialize Google Cloud Storage (if configured)
+// --- GCS Configuration ---
 let storage;
 let bucket;
-if (process.env.GCS_BUCKET_NAME) {
-  storage = new Storage();
-  bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
-  console.log(`GCS bucket '${process.env.GCS_BUCKET_NAME}' configured`);
+const bucketName = process.env.GCS_BUCKET_NAME;
+try {
+  if (bucketName) {
+    storage = new Storage();
+    bucket = storage.bucket(bucketName);
+    console.log(`GCS bucket '${bucketName}' configured`);
+  } else {
+    console.warn('GCS_BUCKET_NAME not set, screenshot uploads will be disabled.');
+  }
+} catch (error) {
+  console.error("Failed to configure GCS:", error);
 }
 
-// Robot management
-const robotsDir = path.join(__dirname, 'robots');
-const robots = {};
-
-// Load robots from directory
-function loadRobots() {
-  if (!fs.existsSync(robotsDir)) {
-    fs.mkdirSync(robotsDir, { recursive: true });
-    console.log('Created robots directory');
-    return;
+// --- Gemini Configuration ---
+try {
+  const { createGeminiAssistant } = require('./gemini-integration.js');
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (geminiApiKey) {
+    const geminiAssistant = createGeminiAssistant(geminiApiKey);
+    app.locals.geminiAssistant = geminiAssistant; // Make it available in routes
+    console.log('Gemini API key detected, adaptive scraping enabled');
+  } else {
+    console.log('No Gemini API key found. To enable adaptive scraping, set GEMINI_API_KEY environment variable');
   }
-  
-  try {
-    const files = fs.readdirSync(robotsDir);
-    files.forEach(file => {
-      if (file.endsWith('.js')) {
-        const robotId = file.replace('.js', '');
-        const robotPath = path.join(robotsDir, file);
-        try {
-          delete require.cache[require.resolve(robotPath)]; // Clear cache
-          const robot = require(robotPath);
-          robots[robotId] = robot;
-          console.log(`Loaded robot: ${robotId}`);
-        } catch (error) {
-          console.error(`Error loading robot ${robotId}:`, error);
-        }
-      }
-    });
-    console.log(`Loaded ${Object.keys(robots).length} robots`);
-  } catch (error) {
-    console.error('Error loading robots:', error);
-  }
-}
-
-// Load robots initially
-loadRobots();
-
-// Store running jobs
-const jobs = {};
-
-// Sample robot for testing if none exists
-if (Object.keys(robots).length === 0) {
-  const sampleRobotPath = path.join(robotsDir, 'sample-council-robot.js');
-  const sampleRobotContent = `module.exports = {
-  name: "Sample Council Meeting Robot",
-  description: "Demo robot that shows council meeting extraction",
-  version: "1.0.0",
-  url: "https://example.org/council-meetings",
-  
-  async run(page, context) {
-    await page.goto(this.url);
-    console.log("Running sample robot...");
-    
-    // This is a mock response for demonstration
-    return [
-      {
-        title: "Regular Council Meeting",
-        date: new Date().toISOString(),
-        type: "Regular",
-        status: "Completed",
-        topics: ["Budget", "Infrastructure", "Parks"]
-      }
-    ];
-  }
-};`;
-
-  fs.writeFileSync(sampleRobotPath, sampleRobotContent);
-  console.log('Created sample robot for demonstration');
-  loadRobots(); // Reload robots
-}
-
-// Utility to store results in Google Cloud Storage
-async function storeResultsInGCS(jobId, results) {
-  if (!bucket) return null;
-  
-  try {
-    const file = bucket.file(`results/${jobId}.json`);
-    await file.save(JSON.stringify(results), {
-      contentType: 'application/json',
-    });
-    return `gs://${bucket.name}/results/${jobId}.json`;
-  } catch (error) {
-    console.error('Error storing results in GCS:', error);
-    return null;
-  }
-}
-
-// API endpoints
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    time: new Date().toISOString(),
-    features: {
-      robots: true,
-      adaptiveScraping: !!GEMINI_API_KEY
+} catch (error) {
+    if (error.code === 'MODULE_NOT_FOUND') {
+        console.warn("Optional @google/genai module not found, adaptive scraping disabled.");
+    } else {
+        console.error("Error initializing Gemini Assistant:", error);
     }
-  });
-});
-
-// Register adaptive scraper routes if Gemini API key is available
-if (GEMINI_API_KEY) {
-  app.use('/api/adaptive', adaptiveScraperRoutes);
 }
 
-// List available robots
-app.get('/api/maxun/robots', (req, res) => {
-  const robotList = Object.entries(robots).map(([id, robot]) => ({
-    id,
-    name: robot.name || id,
-    description: robot.description || '',
-    url: robot.url || '',
-    version: robot.version || '1.0.0'
-  }));
-  
-  res.json(robotList);
-});
+// --- Robot Loading (Replace with dynamic loading if needed) ---
+let robots = {};
+try {
+  const oakBayRobot = require('./robots/oakbay-council-robot.js');
+  robots['oakbay-council-robot'] = oakBayRobot;
+  console.log('Loaded robot: oakbay-council-robot');
+  console.log(`Loaded ${Object.keys(robots).length} robots`);
+} catch (error) {
+  console.error("Error loading robots:", error);
+}
 
-// Get robot details
-app.get('/api/maxun/robots/:id', (req, res) => {
-  const { id } = req.params;
-  const robot = robots[id];
-  
-  if (!robot) {
-    return res.status(404).json({ error: 'Robot not found' });
-  }
-  
-  res.json({
-    id,
-    name: robot.name || id,
-    description: robot.description || '',
-    url: robot.url || '',
-    version: robot.version || '1.0.0'
-  });
-});
+// --- Job Management ---
+const jobs = {}; // In-memory job store (replace with persistent store like Redis/DB for production)
 
-// Run a robot
-app.post('/api/maxun/robots/:id/run', async (req, res) => {
-  const { id } = req.params;
-  const robot = robots[id];
-  
-  if (!robot) {
-    return res.status(404).json({ error: 'Robot not found' });
-  }
-  
-  try {
-    const jobId = `${id}-${Date.now()}`;
-    
-    // Start job in the background
-    jobs[jobId] = {
-      id: jobId,
-      robotId: id,
-      status: 'running',
-      startedAt: new Date(),
-      data: null
-    };
-    
-    // Respond immediately with job ID
-    res.json({ jobId, status: 'running' });
-    
-    // Run the robot in background
-    runRobot(jobId, robot, req.body.params);
-    
-  } catch (error) {
-    console.error(`Error running robot ${id}:`, error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get job status and results
-app.get('/api/maxun/jobs/:id', (req, res) => {
-  const { id } = req.params;
-  const job = jobs[id];
-  
-  if (!job) {
-    return res.status(404).json({ error: 'Job not found' });
-  }
-  
-  // Don't include full data in response if it's large
-  const responseJob = {...job};
-  if (job.data && job.data.length > 0 && job.gcsUrl) {
-    responseJob.data = `Data stored in GCS: ${job.gcsUrl}`;
-  }
-  
-  res.json(responseJob);
-});
-
-// Get job results data
-app.get('/api/maxun/jobs/:id/data', (req, res) => {
-  const { id } = req.params;
-  const job = jobs[id];
-  
-  if (!job) {
-    return res.status(404).json({ error: 'Job not found' });
-  }
-  
-  if (job.status !== 'completed') {
-    return res.status(400).json({ error: 'Job not completed yet' });
-  }
-  
-  if (!job.data) {
-    return res.status(404).json({ error: 'No data available for this job' });
-  }
-  
-  res.json(job.data);
-});
-
-// Sync data to database
-app.post('/api/maxun/sync', async (req, res) => {
-  const { jobId } = req.body;
-  
-  if (!jobId) {
-    return res.status(400).json({ error: 'jobId is required' });
-  }
-  
-  const job = jobs[jobId];
-  if (!job) {
-    return res.status(404).json({ error: 'Job not found' });
-  }
-  
-  if (job.status !== 'completed') {
-    return res.status(400).json({ error: 'Job not completed yet' });
-  }
-  
-  if (!job.data) {
-    return res.status(404).json({ error: 'No data available for this job' });
-  }
-  
-  try {
-    await syncToDatabase(job);
-    res.json({ success: true, message: 'Data synced to database successfully' });
-  } catch (error) {
-    console.error('Error syncing data to database:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Helper function to run a robot
 async function runRobot(jobId, robot, params = {}) {
   let browser;
   try {
-    console.log(`Launching Puppeteer for job ${jobId}`); 
+    console.log(`Launching Puppeteer for job ${jobId}`);
     browser = await puppeteer.launch({
+      executablePath: '/usr/bin/google-chrome-stable', // Explicit path
       headless: 'new',
       timeout: 120000, // Increased timeout to 120 seconds
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
+        '--disable-dev-shm-usage', // Often needed in containers
         '--disable-gpu'
       ]
     });
     console.log(`Puppeteer launched for job ${jobId}`);
-    
+
     const page = await browser.newPage();
     console.log(`New page created for job ${jobId}`);
-    
+
     // Set default viewport
     await page.setViewport({ width: 1280, height: 800 });
-    
+
     // Set default timeout (5 minutes) - this is for page actions, not launch
-    page.setDefaultTimeout(300000); 
-    
+    page.setDefaultTimeout(300000);
+
     // Run the robot
     console.log(`Running robot for job ${jobId}...`);
-    const context = { params };
-    const results = await robot.run(page, context);
-    
-    // Store results
+    const robotFunction = typeof robot === 'function' ? robot : robot.run; // Adapt if needed
+    const results = await robotFunction(page, params);
+    console.log(`Robot for job ${jobId} finished execution.`);
+
+    // Store results and mark as completed
     jobs[jobId].status = 'completed';
-    jobs[jobId].finishedAt = new Date();
     jobs[jobId].data = results;
-    
-    // Store in GCS if configured
-    if (bucket) {
-      const gcsUrl = await storeResultsInGCS(jobId, results);
-      if (gcsUrl) {
-        jobs[jobId].gcsUrl = gcsUrl;
-      }
-    }
-    
+    jobs[jobId].finishedAt = new Date();
     console.log(`Job ${jobId} completed successfully`);
-    
+
+    // Sync data to DB asynchronously
+    if (results && results.length > 0) {
+      syncDataToDB(jobs[jobId]).catch(syncError => {
+          console.error(`Error syncing data for job ${jobId} after completion:`, syncError);
+      });
+    }
+
   } catch (error) {
     console.error(`Error in job ${jobId}:`, error); // Log the full error
     jobs[jobId].status = 'failed';
@@ -367,19 +143,14 @@ async function runRobot(jobId, robot, params = {}) {
     jobs[jobId].finishedAt = new Date();
   } finally {
     if (browser) {
-      console.log(`Closing browser for job ${jobId}`); 
+      console.log(`Closing browser for job ${jobId}`);
       await browser.close();
-      console.log(`Browser closed for job ${jobId}`); 
+      console.log(`Browser closed for job ${jobId}`);
     }
   }
 }
 
-// Sync data to database
-async function syncToDatabase(job) {
-  if (!pool) {
-    throw new Error('Database not configured');
-  }
-  
+async function syncDataToDB(job) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -388,15 +159,30 @@ async function syncToDatabase(job) {
     let insertedDecisions = 0;
     let insertedTopics = 0;
 
+    if (!Array.isArray(job.data)) {
+      console.warn(`Job ${job.id} data is not an array, skipping DB sync.`);
+      await client.query('ROLLBACK'); // Rollback if data is invalid
+      return;
+    }
+
     for (const item of job.data) {
       // Determine what type of data this is and insert accordingly
-      if (item.title && item.date && item.type) {
-        // Looks like a meeting
+      // Simple check based on expected properties
+      if (item && item.title && item.date && item.type) { // Meeting check
         const result = await client.query(
           `INSERT INTO meetings (title, date, type, status, start_time, duration, topics, participants, has_video, has_transcript, has_minutes)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-           ON CONFLICT (title, date) DO NOTHING -- Avoid duplicates
-           RETURNING id`,
+           ON CONFLICT (title, date) DO UPDATE SET
+             type = EXCLUDED.type,
+             status = EXCLUDED.status,
+             start_time = EXCLUDED.start_time,
+             duration = EXCLUDED.duration,
+             topics = EXCLUDED.topics,
+             participants = EXCLUDED.participants,
+             has_video = EXCLUDED.has_video,
+             has_transcript = EXCLUDED.has_transcript,
+             has_minutes = EXCLUDED.has_minutes
+           RETURNING id`, // Update existing meetings
           [
             item.title,
             new Date(item.date),
@@ -404,98 +190,105 @@ async function syncToDatabase(job) {
             item.status || 'Scheduled',
             item.startTime || '19:00',
             item.duration || '2 hours',
-            item.topics || [], // Ensure topics is an array
+            JSON.stringify(item.topics || []), // Store topics as JSON array
             item.participants || null,
             item.hasVideo || false,
             item.hasTranscript || false,
             item.hasMinutes || false
           ]
         );
-        
-        if (result.rows.length > 0) {
-            const meetingId = result.rows[0].id;
-            insertedMeetings++;
-            // console.log(`Inserted meeting with ID ${meetingId}`); // Reduce log verbosity
-            
-            // Insert topics if available
-            if (item.topics && Array.isArray(item.topics)) {
-              for (const topicName of item.topics) {
-                // Check if topic exists
+         const meetingId = result.rows[0].id;
+         insertedMeetings++;
+         // console.log(`Inserted/Updated meeting with ID ${meetingId}`);
+         // Insert/Update topics
+         if (item.topics && Array.isArray(item.topics)) {
+           for (const topicName of item.topics) {
                 const topicResult = await client.query(
-                  `SELECT id FROM topics WHERE name = $1`,
+                  `INSERT INTO topics (name, count, last_discussed)
+                   VALUES ($1, 1, NOW())
+                   ON CONFLICT (name) DO UPDATE SET
+                     count = topics.count + 1,
+                     last_discussed = NOW()
+                   RETURNING id`,
                   [topicName]
                 );
-                
-                let topicId;
                 if (topicResult.rows.length > 0) {
-                  topicId = topicResult.rows[0].id;
-                   // Optionally update topic count/lastDiscussed here if needed
-                } else {
-                  // Create new topic
-                  const newTopicResult = await client.query(
-                    `INSERT INTO topics (name, count, last_discussed) VALUES ($1, $2, NOW()) RETURNING id`,
-                    [topicName, 1]
-                  );
-                  topicId = newTopicResult.rows[0].id;
-                  insertedTopics++;
+                    insertedTopics++; // Count insert/update
                 }
-                
-                // Create meeting-topic relationship (if you have such a table)
+                // Link meeting and topic (assuming meeting_topics table exists)
                 // try {
-                //   await client.query(
-                //     `INSERT INTO meeting_topics (meeting_id, topic_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-                //     [meetingId, topicId]
-                //   );
-                // } catch (e) {
-                //   console.warn('Note: meeting_topics table might not exist or insert failed');
-                // }
-              }
-            }
-        } else {
-            console.log(`Meeting already exists (or insert failed): ${item.title} on ${item.date}`);
-        }
-      } else if (item.meetingId && item.title && item.description) {
-        // Looks like a decision
-        const result = await client.query(
-          `INSERT INTO decisions (title, meeting_id, description, status, type, date, topics, votes_for, votes_against, meeting, meeting_type)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-           ON CONFLICT (title, meeting_id) DO NOTHING -- Avoid duplicates
-           RETURNING id`,
-          [
-            item.title,
-            item.meetingId,
-            item.description,
-            item.status || 'Approved',
-            item.type || 'Resolution',
-            new Date(item.date || new Date()),
-            item.topics || [],
-            item.votesFor || null,
-            item.votesAgainst || null,
-            item.meeting || null, 
-            item.meetingType || null
-          ]
-        );
-         if (result.rows.length > 0) {
-             insertedDecisions++;
-            // console.log(`Inserted decision with ID ${result.rows[0].id}`);
+                //     await client.query(
+                //       `INSERT INTO meeting_topics (meeting_id, topic_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                //       [meetingId, topicResult.rows[0].id]
+                //     );
+                // } catch (e) { console.warn('Skipping meeting_topics link'); }
+           }
          }
+      } else if (item && item.meetingId && item.title && item.description) { // Decision check
+           const result = await client.query(
+             `INSERT INTO decisions (title, meeting_id, description, status, type, date, topics, votes_for, votes_against, meeting, meeting_type)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+              ON CONFLICT (title, meeting_id) DO UPDATE SET
+                description = EXCLUDED.description,
+                status = EXCLUDED.status,
+                type = EXCLUDED.type,
+                date = EXCLUDED.date,
+                topics = EXCLUDED.topics,
+                votes_for = EXCLUDED.votes_for,
+                votes_against = EXCLUDED.votes_against,
+                meeting = EXCLUDED.meeting,
+                meeting_type = EXCLUDED.meeting_type
+              RETURNING id`,
+             [
+               item.title,
+               item.meetingId,
+               item.description,
+               item.status || 'Approved',
+               item.type || 'Resolution',
+               new Date(item.date || new Date()),
+               JSON.stringify(item.topics || []),
+               item.votesFor || null,
+               item.votesAgainst || null,
+               item.meeting || null,
+               item.meetingType || null
+             ]
+           );
+           if (result.rows.length > 0) {
+               insertedDecisions++;
+               // console.log(`Inserted/Updated decision with ID ${result.rows[0].id}`);
+           }
       }
-      
-      // Add more data types as needed
     }
-    console.log(`Sync complete for job ${job.id}: ${insertedMeetings} meetings, ${insertedDecisions} decisions, ${insertedTopics} topics inserted/updated.`);
+    console.log(`Sync complete for job ${job.id}: ${insertedMeetings} meetings, ${insertedDecisions} decisions, ${insertedTopics} topics processed.`);
     await client.query('COMMIT');
   } catch (error) {
     console.error(`ROLLBACK due to error during sync for job ${job.id}:`, error);
     await client.query('ROLLBACK');
-    throw error;
+    // Optionally update job status to reflect sync failure
+    if (jobs[job.id]) jobs[job.id].error = "DB Sync Failed: " + error.message;
+    // Do not re-throw here to allow the main job status to remain 'completed' or 'failed' based on scraping
   } finally {
     client.release();
   }
 }
 
-// Start the server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Maxun service running on port ${PORT}`);
+
+// --- API Routes ---
+app.use('/api', adaptiveScraperRoutes); // Use routes from api-routes.js
+
+// Add a basic health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
 });
+
+// Fallback for undefined routes
+app.use((req, res) => {
+  res.status(404).send({ error: 'Not Found' });
+});
+
+// --- Start Server ---
+app.listen(port, () => {
+  console.log(`Maxun service running on port ${port}`);
+});
+
+module.exports = { app, jobs, runRobot, robots }; // Export for testing or direct invocation if needed
