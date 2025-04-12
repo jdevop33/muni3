@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
-// Use .js extension for runtime module resolution in ESM
+// Use .js extension for runtime module resolution
 import { registerRoutes } from "./routes.js"; 
-// import { log } from "./vite.js"; // No longer needed/used in serverless API
+// Removed Vite import and related logic
 
 console.log('>>> [Vercel] Starting api/index.ts execution...');
 
@@ -13,30 +13,16 @@ app.use(express.urlencoded({ extended: false }));
 // Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  // Capture response if possible (best effort)
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
   res.on("finish", () => {
     const duration = Date.now() - start;
-    // Log only API requests, not static assets handled by Vercel
-    // Note: In serverless, the base path might be just '/' for the function itself
-    // We rely on console logs within specific handlers now.
-    // console.log(`${req.method} ${req.originalUrl} ${res.statusCode} in ${duration}ms`);
+    console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
   });
-
   next();
 });
 
 // Register API routes
 console.log('>>> [Vercel] Attempting to register routes...');
-registerRoutes(app); // Assuming this modifies app directly and doesn't return a Server
+registerRoutes(app); 
 console.log('>>> [Vercel] Routes registered successfully.');
 
 // Generic error handler

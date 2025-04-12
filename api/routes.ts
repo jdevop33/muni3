@@ -6,9 +6,11 @@ import { router as maxunRouter } from "./maxun-client.js";
 import { router as multimodalRouter } from "./routes/multimodal.js"; 
 // import { log } from "./vite.js"; // REMOVED Vite import
 import { setupAuth, roleCheck } from "./auth.js"; 
-import type { Meeting, Decision, Topic } from "../shared/schema.js";
+import type { Meeting, Decision, Topic } from "../shared/schema.js"; // Use relative path and .js
 
-export async function registerRoutes(app: Express): Promise<Server> {
+// Note: registerRoutes previously returned a Server, but Vercel needs the app.
+// Refactored to modify the app instance directly.
+export function registerRoutes(app: Express): void { 
   // Set up authentication
   setupAuth(app);
   
@@ -38,7 +40,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Meetings
   app.get('/api/meetings', async (req: Request, res: Response) => {
     try {
-      const meetings = await storage.getMeetings();
+       // Combine filtering logic here
+      const filterType = req.query.type as string;
+      let meetings;
+      if (filterType && filterType !== 'all') {
+        meetings = await storage.getMeetingsByType(filterType);
+      } else {
+        meetings = await storage.getMeetings();
+      }
       res.json(meetings);
     } catch (error) {
       console.error('Error fetching meetings:', error);
@@ -84,9 +93,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Filter meetings by type
-  // Note: Duplicate route definition for /api/meetings. Logic was previously combined.
-
   // Meeting discussions
   app.get('/api/meetings/:id/discussions', async (req: Request, res: Response) => {
     try {
@@ -115,13 +121,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/decisions', async (req: Request, res: Response) => {
     try {
       const status = req.query.status as string;
-      
-      if (status) {
-        const decisions = await storage.getDecisionsByStatus(status);
-        return res.json(decisions);
+      let decisions;
+      if (status && status !== 'all') { // Corrected logic
+        decisions = await storage.getDecisionsByStatus(status);
+      } else {
+        decisions = await storage.getDecisions();
       }
-      
-      const decisions = await storage.getDecisions();
       res.json(decisions);
     } catch (error) {
       console.error('Error fetching decisions:', error);
@@ -427,14 +432,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // The original code created and returned an http.Server instance here.
-  // For Vercel serverless functions, we typically don't create the server ourselves.
-  // The exported Express app instance (`app`) is usually what's needed.
-  // If registerRoutes truly needs to return a Server for local dev, 
-  // we might need slightly different handling for Vercel vs local.
-  // For now, assuming registerRoutes modifies `app` directly is sufficient.
-  
-  // Placeholder return - this might need adjustment if local dev breaks.
-  // Ideally, refactor registerRoutes to not return a Server or conditionally return it.
-  return null as any; // Or simply have no return value
+  // We don't return the http server in the serverless context
+  // return createServer(app);
 }

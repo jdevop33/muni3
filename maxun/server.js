@@ -4,7 +4,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg');
 const { Storage } = require('@google-cloud/storage');
-const adaptiveScraperRoutes = require('./api-routes');
+const adaptiveScraperRoutes = require('./api-routes.js'); // Add .js extension
 
 // Initialize Express app
 const app = express();
@@ -315,6 +315,7 @@ app.post('/api/maxun/sync', async (req, res) => {
 async function runRobot(jobId, robot, params = {}) {
   let browser;
   try {
+    console.log(`Launching Puppeteer for job ${jobId}`); // Added log
     browser = await puppeteer.launch({
       headless: 'new',
       args: [
@@ -327,8 +328,10 @@ async function runRobot(jobId, robot, params = {}) {
         '--disable-gpu'
       ]
     });
+    console.log(`Puppeteer launched for job ${jobId}`); // Added log
     
     const page = await browser.newPage();
+    console.log(`New page created for job ${jobId}`); // Added log
     
     // Set default viewport
     await page.setViewport({ width: 1280, height: 800 });
@@ -357,13 +360,15 @@ async function runRobot(jobId, robot, params = {}) {
     console.log(`Job ${jobId} completed successfully`);
     
   } catch (error) {
-    console.error(`Error in job ${jobId}:`, error);
+    console.error(`Error in job ${jobId}:`, error); // Log the full error
     jobs[jobId].status = 'failed';
-    jobs[jobId].error = error.message;
+    jobs[jobId].error = error.message; // Store only message for status
     jobs[jobId].finishedAt = new Date();
   } finally {
     if (browser) {
+      console.log(`Closing browser for job ${jobId}`); // Added log
       await browser.close();
+      console.log(`Browser closed for job ${jobId}`); // Added log
     }
   }
 }
@@ -377,14 +382,19 @@ async function syncToDatabase(job) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
+    console.log(`Syncing data for job ${job.id}...`); // Added log
+    let insertedMeetings = 0;
+    let insertedDecisions = 0;
+    let insertedTopics = 0;
+
     for (const item of job.data) {
       // Determine what type of data this is and insert accordingly
       if (item.title && item.date && item.type) {
         // Looks like a meeting
         const result = await client.query(
-          `INSERT INTO meetings (title, date, type, status, start_time, duration)
-           VALUES ($1, $2, $3, $4, $5, $6)
+          `INSERT INTO meetings (title, date, type, status, start_time, duration, topics, participants, has_video, has_transcript, has_minutes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (title, date) DO NOTHING -- Avoid duplicates
            RETURNING id`,
           [
             item.title,
@@ -392,68 +402,90 @@ async function syncToDatabase(job) {
             item.type,
             item.status || 'Scheduled',
             item.startTime || '19:00',
-            item.duration || '2 hours'
+            item.duration || '2 hours',
+            item.topics || [], // Ensure topics is an array
+            item.participants || null,
+            item.hasVideo || false,
+            item.hasTranscript || false,
+            item.hasMinutes || false
           ]
         );
         
-        const meetingId = result.rows[0].id;
-        console.log(`Inserted meeting with ID ${meetingId}`);
-        
-        // Insert topics if available
-        if (item.topics && Array.isArray(item.topics)) {
-          for (const topicName of item.topics) {
-            // Check if topic exists
-            const topicResult = await client.query(
-              `SELECT id FROM topics WHERE name = $1`,
-              [topicName]
-            );
+        if (result.rows.length > 0) {
+            const meetingId = result.rows[0].id;
+            insertedMeetings++;
+            // console.log(`Inserted meeting with ID ${meetingId}`); // Reduce log verbosity
             
-            let topicId;
-            if (topicResult.rows.length > 0) {
-              topicId = topicResult.rows[0].id;
-            } else {
-              // Create new topic
-              const newTopicResult = await client.query(
-                `INSERT INTO topics (name, count) VALUES ($1, $2) RETURNING id`,
-                [topicName, 1]
-              );
-              topicId = newTopicResult.rows[0].id;
+            // Insert topics if available
+            if (item.topics && Array.isArray(item.topics)) {
+              for (const topicName of item.topics) {
+                // Check if topic exists
+                const topicResult = await client.query(
+                  `SELECT id FROM topics WHERE name = $1`,
+                  [topicName]
+                );
+                
+                let topicId;
+                if (topicResult.rows.length > 0) {
+                  topicId = topicResult.rows[0].id;
+                   // Optionally update topic count/lastDiscussed here if needed
+                } else {
+                  // Create new topic
+                  const newTopicResult = await client.query(
+                    `INSERT INTO topics (name, count, last_discussed) VALUES ($1, $2, NOW()) RETURNING id`,
+                    [topicName, 1]
+                  );
+                  topicId = newTopicResult.rows[0].id;
+                  insertedTopics++;
+                }
+                
+                // Create meeting-topic relationship (if you have such a table)
+                // try {
+                //   await client.query(
+                //     `INSERT INTO meeting_topics (meeting_id, topic_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                //     [meetingId, topicId]
+                //   );
+                // } catch (e) {
+                //   console.warn('Note: meeting_topics table might not exist or insert failed');
+                // }
+              }
             }
-            
-            // Create meeting-topic relationship (if you have such a table)
-            // This is just an example, adjust based on your actual schema
-            try {
-              await client.query(
-                `INSERT INTO meeting_topics (meeting_id, topic_id) VALUES ($1, $2)`,
-                [meetingId, topicId]
-              );
-            } catch (e) {
-              // If meeting_topics table doesn't exist, just log and continue
-              console.log('Note: meeting_topics table might not exist');
-            }
-          }
+        } else {
+            console.log(`Meeting already exists (or insert failed): ${item.title} on ${item.date}`);
         }
       } else if (item.meetingId && item.title && item.description) {
         // Looks like a decision
-        await client.query(
-          `INSERT INTO decisions (title, meeting_id, description, status, type, date)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
+        const result = await client.query(
+          `INSERT INTO decisions (title, meeting_id, description, status, type, date, topics, votes_for, votes_against, meeting, meeting_type)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (title, meeting_id) DO NOTHING -- Avoid duplicates
+           RETURNING id`,
           [
             item.title,
             item.meetingId,
             item.description,
             item.status || 'Approved',
             item.type || 'Resolution',
-            new Date(item.date || new Date())
+            new Date(item.date || new Date()),
+            item.topics || [],
+            item.votesFor || null,
+            item.votesAgainst || null,
+            item.meeting || null, 
+            item.meetingType || null
           ]
         );
+         if (result.rows.length > 0) {
+             insertedDecisions++;
+            // console.log(`Inserted decision with ID ${result.rows[0].id}`);
+         }
       }
       
       // Add more data types as needed
     }
-    
+    console.log(`Sync complete for job ${job.id}: ${insertedMeetings} meetings, ${insertedDecisions} decisions, ${insertedTopics} topics inserted/updated.`);
     await client.query('COMMIT');
   } catch (error) {
+    console.error(`ROLLBACK due to error during sync for job ${job.id}:`, error);
     await client.query('ROLLBACK');
     throw error;
   } finally {
