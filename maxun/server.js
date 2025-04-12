@@ -274,7 +274,56 @@ async function syncDataToDB(job) {
 
 
 // --- API Routes ---
-app.use('/api', adaptiveScraperRoutes); // Use routes from api-routes.js
+// Mount adaptive scraper routes (analyze-website, extract-data, configs)
+app.use('/api', adaptiveScraperRoutes); 
+
+// Define routes for pre-defined robots and job status
+const maxunRouter = express.Router();
+
+// List available robots
+maxunRouter.get('/robots', (req, res) => {
+  const robotList = Object.keys(robots).map(id => ({ id, description: robots[id].description || 'No description' }));
+  res.json({ robots: robotList });
+});
+
+// Run a specific robot
+maxunRouter.post('/robots/:robotId/run', (req, res) => {
+  const { robotId } = req.params;
+  const robot = robots[robotId];
+
+  if (!robot) {
+    return res.status(404).json({ error: 'Robot not found' });
+  }
+
+  const jobId = `${robotId}-${Date.now()}`;
+  jobs[jobId] = { id: jobId, robotId, status: 'pending', createdAt: new Date() };
+
+  // Run the robot asynchronously
+  runRobot(jobId, robot, req.body.params);
+
+  res.status(200).json({ jobId, status: 'running' });
+});
+
+// Get job status and results
+maxunRouter.get('/jobs/:jobId', (req, res) => {
+  const { jobId } = req.params;
+  const job = jobs[jobId];
+
+  if (!job) {
+    return res.status(404).json({ error: 'Job not found' });
+  }
+
+  // Optionally remove sensitive data before sending?
+  const { data, ...jobStatus } = job;
+  if (job.status === 'completed') {
+      res.json({ ...jobStatus, data }); // Send data if completed
+  } else {
+      res.json(jobStatus);
+  }
+});
+
+// Mount the maxun robot routes under /api/maxun
+app.use('/api/maxun', maxunRouter);
 
 // Add a basic health check endpoint
 app.get('/health', (req, res) => {
@@ -283,6 +332,7 @@ app.get('/health', (req, res) => {
 
 // Fallback for undefined routes
 app.use((req, res) => {
+  console.warn(`404 Not Found for route: ${req.method} ${req.originalUrl}`); // Log 404s
   res.status(404).send({ error: 'Not Found' });
 });
 
