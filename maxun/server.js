@@ -59,23 +59,31 @@ try {
 }
 
 // --- Gemini Configuration ---
-try {
-  const { createGeminiAssistant } = require('./gemini-integration.js');
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  if (geminiApiKey) {
-    const geminiAssistant = createGeminiAssistant(geminiApiKey);
-    app.locals.geminiAssistant = geminiAssistant; // Make it available in routes
-    console.log('Gemini API key detected, adaptive scraping enabled');
-  } else {
-    console.log('No Gemini API key found. To enable adaptive scraping, set GEMINI_API_KEY environment variable');
-  }
-} catch (error) {
+let geminiAssistant = null; // Initialize as null
+function getGeminiAssistant() { // Lazy initialization
+  if (geminiAssistant) return geminiAssistant;
+  try {
+    const { createGeminiAssistant } = require('./gemini-integration.js');
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (geminiApiKey) {
+      geminiAssistant = createGeminiAssistant(geminiApiKey);
+      console.log('Gemini Assistant Initialized.');
+      return geminiAssistant;
+    } else {
+      console.log('No Gemini API key found in env vars. Adaptive scraping disabled.');
+      return null;
+    }
+  } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND') {
         console.warn("Optional @google/genai module not found, adaptive scraping disabled.");
     } else {
         console.error("Error initializing Gemini Assistant:", error);
     }
+    return null;
+  }
 }
+// Make assistant available via app.locals if needed, but initialize lazily
+app.locals.getGeminiAssistant = getGeminiAssistant;
 
 // --- Robot Loading (Replace with dynamic loading if needed) ---
 let robots = {};
@@ -114,8 +122,8 @@ async function runRobot(jobId, robot, params = {}) {
     // Set default viewport
     await page.setViewport({ width: 1280, height: 800 });
 
-    // Set default timeout (5 minutes) - this is for page actions, not launch
-    page.setDefaultTimeout(300000);
+    // Set default timeout (10 minutes) - INCREASED PAGE TIMEOUT
+    page.setDefaultTimeout(600000);
 
     // Run the robot
     console.log(`Running robot for job ${jobId}...`);
@@ -275,7 +283,7 @@ async function syncDataToDB(job) {
 
 // --- API Routes ---
 // Mount adaptive scraper routes (analyze-website, extract-data, configs)
-app.use('/api', adaptiveScraperRoutes); 
+app.use('/api', adaptiveScraperRoutes);
 
 // Define routes for pre-defined robots and job status
 const maxunRouter = express.Router();
@@ -298,10 +306,11 @@ maxunRouter.post('/robots/:robotId/run', (req, res) => {
   const jobId = `${robotId}-${Date.now()}`;
   jobs[jobId] = { id: jobId, robotId, status: 'pending', createdAt: new Date() };
 
-  // Run the robot asynchronously
+  // Run the robot asynchronously (don't wait for it to finish)
   runRobot(jobId, robot, req.body.params);
 
-  res.status(200).json({ jobId, status: 'running' });
+  // Return immediately with job ID
+  res.status(200).json({ jobId, status: 'running' }); 
 });
 
 // Get job status and results
