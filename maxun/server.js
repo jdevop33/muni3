@@ -315,9 +315,10 @@ app.post('/api/maxun/sync', async (req, res) => {
 async function runRobot(jobId, robot, params = {}) {
   let browser;
   try {
-    console.log(`Launching Puppeteer for job ${jobId}`); // Added log
+    console.log(`Launching Puppeteer for job ${jobId}`); 
     browser = await puppeteer.launch({
       headless: 'new',
+      timeout: 120000, // Increased timeout to 120 seconds
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -328,16 +329,16 @@ async function runRobot(jobId, robot, params = {}) {
         '--disable-gpu'
       ]
     });
-    console.log(`Puppeteer launched for job ${jobId}`); // Added log
+    console.log(`Puppeteer launched for job ${jobId}`);
     
     const page = await browser.newPage();
-    console.log(`New page created for job ${jobId}`); // Added log
+    console.log(`New page created for job ${jobId}`);
     
     // Set default viewport
     await page.setViewport({ width: 1280, height: 800 });
     
-    // Set default timeout (5 minutes)
-    page.setDefaultTimeout(300000);
+    // Set default timeout (5 minutes) - this is for page actions, not launch
+    page.setDefaultTimeout(300000); 
     
     // Run the robot
     console.log(`Running robot for job ${jobId}...`);
@@ -366,9 +367,9 @@ async function runRobot(jobId, robot, params = {}) {
     jobs[jobId].finishedAt = new Date();
   } finally {
     if (browser) {
-      console.log(`Closing browser for job ${jobId}`); // Added log
+      console.log(`Closing browser for job ${jobId}`); 
       await browser.close();
-      console.log(`Browser closed for job ${jobId}`); // Added log
+      console.log(`Browser closed for job ${jobId}`); 
     }
   }
 }
@@ -382,7 +383,7 @@ async function syncToDatabase(job) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    console.log(`Syncing data for job ${job.id}...`); // Added log
+    console.log(`Syncing data for job ${job.id}...`);
     let insertedMeetings = 0;
     let insertedDecisions = 0;
     let insertedTopics = 0;
