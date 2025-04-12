@@ -2,28 +2,24 @@ FROM node:22-slim
 
 WORKDIR /app
 
-# Step 1: Install prerequisites including ca-certificates
+# Step 1: Install prerequisites
 RUN apt-get update && \
-    apt-get install -y wget gnupg unzip ca-certificates --no-install-recommends && \
+    apt-get install -y wget gnupg ca-certificates --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Step 2: Download Google Chrome key
-RUN wget -q -O /tmp/google.pub https://dl-ssl.google.com/linux/linux_signing_key.pub
+# Step 2: Add Google Chrome repository and key using gpg --dearmor
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | \
+    gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
 
-# Step 3: Import the key using gpg
-RUN gpg --no-default-keyring --keyring /etc/apt/keyrings/google-chrome.gpg --import /tmp/google.pub && \
-    chmod 644 /etc/apt/keyrings/google-chrome.gpg && \
-    rm /tmp/google.pub
-
-# Step 4: Add Google Chrome repository source
-RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
-
-# Step 5: Install Chrome and required fonts/libs
+# Step 3: Install Chrome and required fonts/libs
 RUN apt-get update && \
     apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 --no-install-recommends && \
+    # Clean up apt lists after install
     rm -rf /var/lib/apt/lists/*
 
-# Step 6: Install original puppeteer dependencies
+# Step 4: Install original puppeteer dependencies (potentially redundant now, but safe)
+# Combine update and install, clean up after
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # ca-certificates -- already installed
     fonts-liberation \
@@ -57,18 +53,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxi6 \
     libxrandr2 \
     libxrender1 \
-    #libxss1 -- already installed in step 5
+    #libxss1 -- already installed in step 3
     libxtst6 \
     lsb-release \
     xdg-utils && \
     rm -rf /var/lib/apt/lists/*
 
-# Step 7: Install npm packages
+# Step 5: Install npm packages
 COPY package*.json ./
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN npm install --legacy-peer-deps
 
-# Step 8: Copy remaining app code
+# Step 6: Copy remaining app code
 COPY . .
 
 EXPOSE 8080
