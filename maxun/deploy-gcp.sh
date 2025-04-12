@@ -5,16 +5,17 @@
 set -e
 
 # Configuration
-PROJECT_ID=${PROJECT_ID:-councilinsight-prod}
+PROJECT_ID=${PROJECT_ID:-councilinsight-prod} 
 REGION=${REGION:-us-central1}
 SERVICE_NAME=${SERVICE_NAME:-maxun-service}
 REPOSITORY=${REPOSITORY:-maxun-repo}
 IMAGE_NAME=${IMAGE_NAME:-maxun-service}
 GCS_BUCKET=${GCS_BUCKET:-councilinsight-data}
-MEMORY=${MEMORY:-1Gi}
+MEMORY=${MEMORY:-2Gi} # Increased memory to 2Gi
 CPU=${CPU:-1}
 MAX_INSTANCES=${MAX_INSTANCES:-10}
 MIN_INSTANCES=${MIN_INSTANCES:-0}
+GEMINI_KEY=${GEMINI_API_KEY:-} # Read Gemini key from environment
 
 # Check if DATABASE_URL is set
 if [ -z "$DATABASE_URL" ]; then
@@ -26,6 +27,7 @@ echo "Deploying Maxun service to Google Cloud Run..."
 echo "Project ID: $PROJECT_ID"
 echo "Region: $REGION"
 echo "Service name: $SERVICE_NAME"
+echo "Memory: $MEMORY"
 
 # Check if gcloud is installed
 if ! command -v gcloud &> /dev/null; then
@@ -63,6 +65,12 @@ gcloud builds submit \
   --timeout=20m \
   .
 
+# Construct env vars string, include Gemini key if present
+ENV_VARS_STRING="DATABASE_URL=$DATABASE_URL,GCS_BUCKET_NAME=$GCS_BUCKET,NODE_ENV=production"
+if [ -n "$GEMINI_KEY" ]; then
+  ENV_VARS_STRING=",GEMINI_API_KEY=$GEMINI_KEY,${ENV_VARS_STRING}"
+fi
+
 # Deploy to Cloud Run
 echo "Deploying to Cloud Run..."
 gcloud run deploy $SERVICE_NAME \
@@ -74,7 +82,7 @@ gcloud run deploy $SERVICE_NAME \
   --cpu $CPU \
   --max-instances $MAX_INSTANCES \
   --min-instances $MIN_INSTANCES \
-  --set-env-vars="DATABASE_URL=$DATABASE_URL,GCS_BUCKET_NAME=$GCS_BUCKET,NODE_ENV=production"
+  --set-env-vars="${ENV_VARS_STRING}"
 
 # Get the service URL
 SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')
