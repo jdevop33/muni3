@@ -7,14 +7,15 @@ module.exports = {
   async run(page, context) {
     console.log("Starting Oak Bay CivicWeb meeting scraper...");
     try {
-      await page.goto(this.url, { waitUntil: 'networkidle0', timeout: 60000 }); // Wait for network idle, slightly longer timeout
+      // await page.goto(this.url, { waitUntil: 'networkidle0', timeout: 60000 }); // Wait for network idle, slightly longer timeout - Original
+      await page.goto(this.url); // SIMPLIFIED GOTO CALL
       console.log("Navigated to page: ", this.url);
 
       // Wait for the main meeting container
-      const meetingListSelector = '#MeetingList'; 
+      const meetingListSelector = '#MeetingList';
       console.log(`Waiting for selector: ${meetingListSelector}`);
       try {
-        await page.waitForSelector(meetingListSelector, { timeout: 90000 }); // Increased wait time 
+        await page.waitForSelector(meetingListSelector, { timeout: 90000 }); // Increased wait time
         console.log(`Selector ${meetingListSelector} found.`);
       } catch (e) {
         console.error(`Failed to find selector ${meetingListSelector}. Dumping page content...`);
@@ -31,10 +32,10 @@ module.exports = {
       console.log("Attempting to evaluate page content...");
       const meetings = await page.evaluate((listSelector) => {
         // This console.log runs in the browser context, may not appear in Cloud Run server logs easily
-        console.log(`Evaluating inside browser for selector: ${listSelector}`); 
-        const meetingNodes = document.querySelectorAll(`${listSelector} .MeetingRow`); 
+        console.log(`Evaluating inside browser for selector: ${listSelector}`);
+        const meetingNodes = document.querySelectorAll(`${listSelector} .MeetingRow`);
         const meetingsData = [];
-        console.log(`Found ${meetingNodes.length} meeting nodes in browser.`); 
+        console.log(`Found ${meetingNodes.length} meeting nodes in browser.`);
 
         meetingNodes.forEach((node, index) => {
           try {
@@ -46,19 +47,19 @@ module.exports = {
 
             meeting.title = titleElem ? titleElem.textContent.trim() : 'Unknown Meeting Type'; // Use title directly
             const dateText = dateElem ? dateElem.textContent.trim() : null;
-            
+
             // Basic date parsing (might need refinement depending on actual format)
-            meeting.date = dateText ? new Date(dateText).toISOString() : new Date().toISOString(); 
+            meeting.date = dateText ? new Date(dateText).toISOString() : new Date().toISOString();
             if (isNaN(new Date(meeting.date).getTime())) { // Check if date is valid
                  console.warn(`Invalid date parsed: ${dateText}, using current date.`);
                  meeting.date = new Date().toISOString();
             }
 
-            meeting.type = meeting.title.includes('Regular') ? 'Regular' : 
-                           meeting.title.includes('Committee') ? 'Committee' : 
-                           meeting.title.includes('Public Hearing') ? 'Public Hearing' : 
+            meeting.type = meeting.title.includes('Regular') ? 'Regular' :
+                           meeting.title.includes('Committee') ? 'Committee' :
+                           meeting.title.includes('Public Hearing') ? 'Public Hearing' :
                            meeting.title.includes('Special') ? 'Special' : 'Other'; // Infer type from title
-            
+
             meeting.status = 'Unknown'; // Determine later based on date/docs
             meeting.startTime = timeElem ? timeElem.textContent.trim() : null;
             meeting.duration = null; // Duration not directly available
@@ -83,7 +84,7 @@ module.exports = {
                     }
                 });
             }
-            
+
             // Refine status based on date and docs
             const now = new Date();
             const meetingDate = new Date(meeting.date);
@@ -92,7 +93,7 @@ module.exports = {
             } else if (meeting.hasMinutes) {
                 meeting.status = "Completed";
             } else {
-                meeting.status = "Past (Minutes Pending)"; 
+                meeting.status = "Past (Minutes Pending)";
             }
 
             meetingsData.push(meeting);
@@ -104,7 +105,7 @@ module.exports = {
 
         return meetingsData;
       }, meetingListSelector);
-      
+
       console.log(`Successfully evaluated page, extracted ${meetings.length} potential meetings.`);
 
       return meetings;
