@@ -2,20 +2,25 @@ FROM node:22-slim
 
 WORKDIR /app
 
-# Install Google Chrome Stable and necessary dependencies
-# Use modern apt key management
-RUN apt-get update && apt-get install -y wget gnupg unzip --no-install-recommends && \
-    wget -q -O /tmp/google.pub https://dl-ssl.google.com/linux/linux_signing_key.pub && \
+# Step 1: Install prerequisites
+RUN apt-get update && \
+    apt-get install -y wget gnupg unzip --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+# Step 2: Add Google Chrome repository and key
+RUN wget -q -O /tmp/google.pub https://dl-ssl.google.com/linux/linux_signing_key.pub && \
     gpg --no-default-keyring --keyring /etc/apt/keyrings/google-chrome.gpg --import /tmp/google.pub && \
     chmod 644 /etc/apt/keyrings/google-chrome.gpg && \
     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
-    rm /tmp/google.pub && \
-    apt-get update && \
+    rm /tmp/google.pub
+
+# Step 3: Install Chrome and required fonts/libs
+RUN apt-get update && \
     apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Install original puppeteer dependencies (some might overlap, but ensures coverage)
-RUN apt-get update && apt-get install -y \
+# Step 4: Install original puppeteer dependencies (potentially redundant now, but safe)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
@@ -48,19 +53,20 @@ RUN apt-get update && apt-get install -y \
     libxi6 \
     libxrandr2 \
     libxrender1 \
-    libxss1 \
+    #libxss1 -- already installed in step 3
     libxtst6 \
     lsb-release \
-    # wget -- already installed above
     xdg-utils && \
     rm -rf /var/lib/apt/lists/*
 
+# Step 5: Install npm packages
 COPY package*.json ./
-# Ensure Puppeteer doesn't try to download Chrome again
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN npm install --legacy-peer-deps
 
+# Step 6: Copy remaining app code
 COPY . .
+
 EXPOSE 8080
 ENV PORT=8080
 ENV HOST=0.0.0.0
