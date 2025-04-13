@@ -1,10 +1,15 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const puppeteer = require('puppeteer'); // Use puppeteer-core if using system chrome consistently
+// Use puppeteer-extra to apply stealth plugin
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const { Pool } = require('pg');
 const { Storage } = require('@google-cloud/storage');
 const adaptiveScraperRoutes = require('./api-routes.js');
+
+// Apply the stealth plugin
+puppeteer.use(StealthPlugin());
 
 // Initialize Express app
 const app = express();
@@ -102,12 +107,12 @@ const jobs = {}; // In-memory job store (replace with persistent store like Redi
 async function runRobot(jobId, robot, params = {}) {
   let browser;
   try {
-    console.log(`Launching Puppeteer for job ${jobId}`);
+    console.log(`Launching Puppeteer-Extra for job ${jobId}`); // Updated log
     browser = await puppeteer.launch({
       executablePath: '/usr/bin/google-chrome-stable', // Explicit path
       headless: 'new',
       timeout: 120000, // Increased browser launch timeout
-      protocolTimeout: 240000, // INCREASED protocol timeout to 240 seconds
+      protocolTimeout: 240000, // Increased protocol timeout
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -115,7 +120,7 @@ async function runRobot(jobId, robot, params = {}) {
         '--disable-gpu'
       ]
     });
-    console.log(`Puppeteer launched for job ${jobId}`);
+    console.log(`Puppeteer-Extra launched for job ${jobId}`); // Updated log
 
     const page = await browser.newPage();
     console.log(`New page created for job ${jobId}`);
@@ -139,10 +144,12 @@ async function runRobot(jobId, robot, params = {}) {
     console.log(`Job ${jobId} completed successfully`);
 
     // Sync data to DB asynchronously
-    if (results && results.length > 0) {
+    if (results && Array.isArray(results) && results.length > 0) { // Added Array check
       syncDataToDB(jobs[jobId]).catch(syncError => {
           console.error(`Error syncing data for job ${jobId} after completion:`, syncError);
       });
+    } else {
+        console.log(`No results to sync for job ${jobId}`);
     }
 
   } catch (error) {
@@ -150,6 +157,18 @@ async function runRobot(jobId, robot, params = {}) {
     jobs[jobId].status = 'failed';
     jobs[jobId].error = error.message; // Store only message for status
     jobs[jobId].finishedAt = new Date();
+
+    // Attempt screenshot even on failure
+    if (page) {
+      try {
+         const screenshotPath = `/tmp/error_screenshot_${Date.now()}.png`; // Use /tmp for Cloud Run
+         await page.screenshot({ path: screenshotPath, fullPage: true });
+         console.log(`Error screenshot saved to ${screenshotPath} (Note: /tmp is ephemeral)`);
+      } catch (screenshotError) {
+         console.error("Failed to take error screenshot:", screenshotError);
+      }
+    }
+
   } finally {
     if (browser) {
       console.log(`Closing browser for job ${jobId}`);
