@@ -1,17 +1,17 @@
 module.exports = {
   name: "Oak Bay Council Meeting Scraper",
   description: "Extracts meeting information from the Oak Bay CivicWeb Portal", // Updated description
-  version: "1.1.1", // Incremented version
+  version: "1.1.2", // Incremented version
   url: "https://oakbay.civicweb.net/Portal/MeetingTypeList.aspx", // CORRECT URL
 
   async run(page, context) {
     console.log("Starting Oak Bay CivicWeb meeting scraper...");
-    const targetUrl = "https://oakbay.civicweb.net/Portal/MeetingTypeList.aspx"; // Hardcoded URL
+    // const targetUrl = "https://oakbay.civicweb.net/Portal/MeetingTypeList.aspx"; // Hardcoded URL - Reverted
     try {
       // await page.goto(this.url, { waitUntil: 'networkidle0', timeout: 60000 }); // Original
-      // await page.goto(this.url); // Simplified - Still failed
-      await page.goto(targetUrl); // HARDCODED URL
-      console.log("Navigated to page: ", targetUrl);
+      // await page.goto(targetUrl); // HARDCODED URL - Reverted
+      await page.goto(this.url); // Use this.url again
+      console.log("Navigated to page: ", this.url);
 
       // Wait for the main meeting container
       const meetingListSelector = '#MeetingList';

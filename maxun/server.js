@@ -106,7 +106,8 @@ async function runRobot(jobId, robot, params = {}) {
     browser = await puppeteer.launch({
       executablePath: '/usr/bin/google-chrome-stable', // Explicit path
       headless: 'new',
-      timeout: 120000, // Increased timeout to 120 seconds
+      timeout: 120000, // Increased browser launch timeout
+      protocolTimeout: 240000, // INCREASED protocol timeout to 240 seconds
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -122,7 +123,7 @@ async function runRobot(jobId, robot, params = {}) {
     // Set default viewport
     await page.setViewport({ width: 1280, height: 800 });
 
-    // Set default timeout (10 minutes) - INCREASED PAGE TIMEOUT
+    // Set default navigation/action timeout (10 minutes)
     page.setDefaultTimeout(600000);
 
     // Run the robot
